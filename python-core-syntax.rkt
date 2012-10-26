@@ -20,6 +20,9 @@ ParselTongue.
   [CError (e1 : CExp)]
   
   [CIf (test : CExp) (then : CExp) (else : CExp)]
+  [COr (l : CExp) (r : CExp)]
+  [CAnd (l : CExp) (r : CExp)]
+  [CUnary (op : symbol) (expr : CExp)];+,-,~,not
   
   [CId (x : symbol)]
   [CLet (x : symbol) (bind : CExp) (body : CExp)]

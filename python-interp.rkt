@@ -36,6 +36,17 @@
                       
         [else (err sto "Application failed with arity mismatch")]))
 
+(define (VBool v)
+  (if v (VTrue) (VFalse)))
+(define (BoolEval (val : CVal)) : CVal
+  (type-case CVal val
+    [VNum (n) (VBool (not (zero? n)))]
+    [VStr (s) (VBool (not (string=? "" s)))]
+    [VTrue () (VTrue)]
+    [VFalse () (VFalse)]
+    [VNone () (VFalse)]
+    [VClosure (e args b) (VTrue)]))
+
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
     [CNum (n) (ValA (VNum n) store)]
@@ -44,6 +55,24 @@
     [CFalse () (ValA (VFalse) store)]
     [CNone () (ValA (VNone) store)]
 
+    [COr (l r) (interp-as env store ([(v s) l])
+                          (if (VTrue? (BoolEval v)) (ValA (VTrue) s)
+                              (interp-as env s ([(v2 s2) r])
+                                         (ValA (BoolEval v2) s2))))]
+    [CAnd (l r) (interp-as env store ([(v s) l])
+                           (if (VFalse? (BoolEval v)) (ValA (VFalse) s)
+                               (interp-as env s ([(v2 s2) r])
+                                          (ValA (BoolEval v2) s2))))]
+    [CUnary (op expr)
+            (interp-as env store ([(v s) expr])
+                       (case op
+                         ['not (ValA (if (VTrue? (BoolEval v)) (VFalse) (VTrue)) s)]
+                         [else (type-case CVal v
+                                 [VNum (n) (case op
+                                             ['+ (ValA v s)] ['- (ValA (VNum (- 0 n)) s)] 
+                                             [else (err s "not defined on numbers: " (symbol->string op))])]
+                                 [else (err s "bad operand for unary operation" (symbol->string op))])]))]
+    
     [CError (e) (type-case Ans (interp-full e env store)
                   [ValA (v s) (ExnA v s)]
                   [ExnA (v s) (ExnA v s)])]
@@ -73,7 +102,7 @@
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
                        (ValA (python-prim1 prim v) s))]
-    [else (err store "Not implemented")]))
+    [else (begin (display expr) (err store "Not implemented"))]))
 
 (define (interp expr) : CVal
   (begin ;(display expr)
