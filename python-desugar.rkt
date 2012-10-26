@@ -3,6 +3,17 @@
 (require "python-syntax.rkt"
          "python-core-syntax.rkt")
 
+(define make-id
+  (let ((count 0))
+    (lambda () 
+      (begin (set! count (add1 count))
+             (string->symbol (string-append "--var--" (to-string count)))))))
+(define (last lst)
+  (cond [(empty? (rest lst)) (first lst)]
+        [else (last (rest lst))]))
+(define (take-last lst)
+  (cond [(empty? (rest lst)) empty]
+        [else (cons (first lst) (take-last (rest lst)))]))
 
 (define (desug (expr : PyExpr)) : CExp
   (type-case PyExpr expr
@@ -18,8 +29,15 @@
     [PyId (x) (CId x)]
     [PyPass () (CNone)]
     
-    [PyOr (exprs) (foldr COr (CFalse) (map desug exprs))]
-    [PyAnd (exprs) (foldr CAnd (CTrue) (map desug exprs))]
+    [PyOr (exprs)  (foldr (lambda (f rest) 
+                            (let ((id (make-id)))
+                              (CLet id (desug f) (CIf (CId id) (CId id) rest)))) (CFalse) exprs)]
+    [PyAnd (exprs)
+           (foldr (lambda (f rest) 
+                            (let ((id (make-id)))
+                              (CLet id (desug f) 
+                                    (CIf (CId id) rest (CId id))))) (desug (last exprs)) (take-last exprs))]   
+
     [PyUnary (op expr) (CUnary op (desug expr))]
     [PyIf (c t e) (CIf (desug c) (desug t) (desug e))]
     

@@ -55,14 +55,6 @@
     [CFalse () (ValA (VFalse) store)]
     [CNone () (ValA (VNone) store)]
 
-    [COr (l r) (interp-as env store ([(v s) l])
-                          (if (VTrue? (BoolEval v)) (ValA (VTrue) s)
-                              (interp-as env s ([(v2 s2) r])
-                                         (ValA (BoolEval v2) s2))))]
-    [CAnd (l r) (interp-as env store ([(v s) l])
-                           (if (VFalse? (BoolEval v)) (ValA (VFalse) s)
-                               (interp-as env s ([(v2 s2) r])
-                                          (ValA (BoolEval v2) s2))))]
     [CUnary (op expr)
             (interp-as env store ([(v s) expr])
                        (case op
@@ -78,7 +70,7 @@
                   [ExnA (v s) (ExnA v s)])]
     [CIf (i t e)
          (interp-as env store ([(v s) i])
-                    (interp-full (if (VTrue? v) t e) env s))]
+                    (interp-full (if (VTrue? (BoolEval v)) t e) env s))]
     
     [CId (x) (type-case (optionof Location) (hash-ref env x)
                [some (loc) (ValA (some-v (hash-ref store loc)) store)]
