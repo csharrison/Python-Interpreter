@@ -8,7 +8,11 @@ class JSONVisitorException(Exception):
 class QuickVisitor(ast.NodeVisitor):
   def generic_visit(self, n):
     if (not (isinstance(n, ast.AST))):
+<<<<<<< HEAD
       raise JSONVisitorException("Unexpected error: Non-ast passed to visit. Please report.")
+=======
+      raise JSONVisitorException("Unexpected error: Non-ast passed to visit. Please report to the TAs.")
+>>>>>>> upstream/master
     fields = ast.iter_fields(n)
 
     def get_item(v):
@@ -17,7 +21,14 @@ class QuickVisitor(ast.NodeVisitor):
       elif t == list: return list(map (lambda elt: get_item(elt), v))
       elif isinstance(v, ast.AST): return self.visit(v)
       elif t in [int, float, str]: return v
+<<<<<<< HEAD
       else: raise JSONVisitorException("Unexpected error: Missed case.  Please report.")
+=======
+      elif t in [complex]: return {'nodetype': 'Complex', 'value': str(v)}
+      else:
+        raise JSONVisitorException("Unexpected error: Missed case: %s.  Please report to the TAs."
+          % v)
+>>>>>>> upstream/master
 
     n_dict = dict([(f,get_item(v)) for (f,v) in fields])
     n_dict['nodetype'] = n.__class__.__name__

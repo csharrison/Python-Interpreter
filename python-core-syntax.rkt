@@ -6,13 +6,12 @@ This is the core language; it is just borrowing a few things from
 ParselTongue.
 
 |#
-;(define-type CArray
-;  [
 
 (define-type CExp
   [CNum (n : number)]
   [CStr (s : string)]
   [CTrue]
+
   [CFalse]
   [CNone]
   [CSeq (e1 : CExp) (e2 : CExp)]
@@ -34,10 +33,12 @@ ParselTongue.
   [CPrim2 (prim : symbol) (larg : CExp) (rarg : CExp)])
 ;;objects
 ; questionable things: notimplemented, ellipses
+
 (define-type CVal
   [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]
+
   [VFalse]
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (body : CExp)])
@@ -49,3 +50,4 @@ ParselTongue.
 (define-type-alias Location number)
 (define-type-alias Env (hashof symbol Location))
 (define-type-alias Store (hashof Location CVal))
+

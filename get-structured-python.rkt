@@ -12,6 +12,7 @@ structure that you define in python-syntax.rkt
 
 |#
 
+
 (define (get-structure pyjson)
   (match pyjson
     [(hash-table ('nodetype "Pass"))
@@ -20,6 +21,7 @@ structure that you define in python-syntax.rkt
      (PySeq (map get-structure expr-list))]
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structure expr)]
+
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
                  ('kwargs kwargs)     ;; ignoring kwargs for now
@@ -120,4 +122,3 @@ structure that you define in python-syntax.rkt
 (define (get-structured-python pyjson)
   (begin ;(display pyjson)
          (get-structure pyjson)))
-

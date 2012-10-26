@@ -1,6 +1,5 @@
 #lang plai-typed
 
-
 (define-type PyArg
   [Arg (id : symbol)] ;; id
   [Default (id : symbol) (expr : PyExpr)] ;;id=expr
@@ -34,5 +33,3 @@
   [PyNotImplemented]
   
   [PyRaise (e1 : PyExpr)])
-  
-

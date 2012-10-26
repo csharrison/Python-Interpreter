@@ -10,6 +10,7 @@ desugared expressions in an environment that will contain useful
 bindings.  For example, this sample library binds `print` to a function
 that calls the primitive `print`.
 
+
 we need to define: 
 ___assertIn
 ___assertNotIn
@@ -18,6 +19,7 @@ ___assertNotEqual
 ___assertRaises
 ___assertIs
 ___fail
+
 |#
 
 (define-type-alias Lib (CExp -> CExp))
@@ -29,6 +31,7 @@ ___fail
 (define assert-true-lambda
   (CFunc (list 'check-true)
     (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
+
 (define assert-false-lambda
   (CFunc (list 'check-true)
     (CIf (CId 'check-true) (CError (CStr "Assert failed")) (CTrue))))
@@ -36,6 +39,7 @@ ___fail
 (define exception-lambda
   (CFunc (list 'e)
          (CError (CId 'e))))
+
 
 (define true-val
   (CTrue))
@@ -49,6 +53,7 @@ ___fail
         (bind 'Exception exception-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)))
+
 
 (define (python-lib expr)
   (local [(define (python-lib/recur libs)
