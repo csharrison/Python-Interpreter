@@ -1,0 +1,1 @@
+#hasheq((nodetype . Module) (body . (#hasheq((test . #hasheq((id . True) (nodetype . Name) (ctx . #hasheq((nodetype . Load))))) (nodetype . If) (body . (#hasheq((nodetype . Expr) (value . #hasheq((nodetype . Num) (n . 0)))))) (orelse . ())))))
