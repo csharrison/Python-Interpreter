@@ -30,6 +30,10 @@ structure that you define in python-syntax.rkt
                  ('func func-expr))
      (PyApp (get-structure func-expr)
             (map get-structure args-list))]
+    [(hash-table ('nodetype "Assign")
+                 ('targets targets)
+                 ('value value))
+     (PyAssign (map get-structure targets) (get-structure value))]
     [(hash-table ('nodetype "Name")
                  ('ctx _)        ;; ignoring ctx for now
                  ('id id))

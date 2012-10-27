@@ -32,6 +32,7 @@ containers: dict, (set)
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CUnary (op : symbol) (expr : CExp)];+,-,~,not
   
+  [CSet! (id : symbol) (val : CExp)]
   [CId (x : symbol)]
   [CLet (x : symbol) (bind : CExp) (body : CExp)]
   
@@ -47,7 +48,6 @@ containers: dict, (set)
 
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
-
 (define-type CVal
   [VNum (n : number)]
   [VStr (s : string)]

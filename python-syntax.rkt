@@ -22,6 +22,8 @@
   
   [PyId (x : symbol)]
   
+  [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
+  
   [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (listof PyDefault)) (body : PyExpr)]
   [PyFun (args : (listof symbol)) (defaults : (listof PyDefault))  (body : PyExpr)]
   

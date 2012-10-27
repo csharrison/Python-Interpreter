@@ -3,6 +3,9 @@
 (require "python-syntax.rkt"
          "python-core-syntax.rkt")
 
+(define (Err str)
+  (CError (CStr str)))
+
 (define make-id
   (let ((count 0))
     (lambda () 
@@ -15,28 +18,34 @@
   (cond [(empty? (rest lst)) empty]
         [else (cons (first lst) (take-last (rest lst)))]))
 
-(define (cascade-seq (exprs : (listof CExp))) : CExp
-  (cond
-    [(empty? exprs) (CNone)]
-    [(cons? exprs) (CSeq (first exprs) (cascade-seq (rest exprs)))]))
-
 (define (desug (expr : PyExpr)) : CExp
   (type-case PyExpr expr
-    [PySeq (es) (cascade-seq (map desug es))]
+    [PySeq (es) 
+           (if (empty? es) 
+               (CNone)
+               (foldr (lambda (e1 e2) (CSeq e2 (desug e1))) (desug (first es)) (rest es)))]
     [PyNum (n) (CNum n)]
     [PyStr (s) (CStr s)]
     [PyTrue () (CTrue)]
     [PyFalse () (CFalse)]
     [PyNone () (CNone)]
     [PyApp (f args) (CApp (desug f) (map desug args))]
+    
     [PyId (x) (CId x)]
+    [PyAssign (targets value)
+              (cond [(empty? (rest targets))
+                     (type-case PyExpr (first targets)
+                       [PyId (id) (CSet! id (desug value))]
+                       [else (Err "no assign case yet for ")])]
+                    [(cons? (rest targets))
+                     (Err "no assign for iterables")])]
+    
     [PyPass () (CNone)]
     
     ;;use mutation to set
     [PyFunDef (name args defaults body) [CNone]]
-    [PyFun (args defaults body) (CFunc args 
-                                       (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd)))) defaults) 
-                                       (desug body))]
+    [PyFun (args defaults body) (CFunc args (map 
+                                             (lambda (pyd) (CD (defaults) (desug body))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
