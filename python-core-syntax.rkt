@@ -28,6 +28,7 @@ ParselTongue.
   [CFunc (args : (listof symbol)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]
+  [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   )
 ;;objects

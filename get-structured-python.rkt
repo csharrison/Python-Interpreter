@@ -36,6 +36,7 @@ structure that you define in python-syntax.rkt
      (match id
        ["True" (PyTrue)]
        ["False" (PyFalse)]
+       ["None" (PyNone)]
        [_  (PyId (string->symbol id))])]
     [(hash-table ('nodetype "FunctionDef")
                  ('name name)
@@ -132,8 +133,15 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Add")) '+]
     [(hash-table ('nodetype "Sub")) '-]
     [(hash-table ('nodetype "Div")) '/]
+    [(hash-table ('nodetype "FloorDiv")) '//]
     [(hash-table ('nodetype "Mult")) '*]
     [(hash-table ('nodetype "Pow")) '**]
+    [(hash-table ('nodetype "LShift")) '<<]
+    [(hash-table ('nodetype "RShift")) '>>]
+    [(hash-table ('nodetype "BitOr")) 'bitor]
+    [(hash-table ('nodetype "BitXor")) 'bitxor]
+    [(hash-table ('nodetype "BitAnd")) '&]
+    [(hash-table ('nodetype "Mod")) '%]
     [a (begin (display "\nwhat is this: ") (display a) (display "\n") (PyPass))]
     [_ (error 'parse "Haven't handled a case yet")]))
 

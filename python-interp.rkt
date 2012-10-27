@@ -2,6 +2,15 @@
 
 (require "python-core-syntax.rkt"
          "python-primitives.rkt")
+(require (typed-in racket 
+                   (string<? : (string string -> boolean))
+                   (string<=? : (string string -> boolean))
+                   (string>? : (string string -> boolean))
+                   (string>=? : (string string -> boolean))
+                   (expt : (number number -> number))))
+(define s+ string-append)
+
+                   
 
 ;;err : calls an error with all input strings appended
 (define-syntax err
@@ -74,7 +83,7 @@
     
     [CId (x) (type-case (optionof Location) (hash-ref env x)
                [some (loc) (ValA (some-v (hash-ref store loc)) store)]
-               [none () (err store "Unbound identifier")])]
+               [none () (err store "Unbound identifier: " (symbol->string x))])]
     
     [CLet (x bind body)
           (interp-as env store([(v s) bind])
@@ -90,16 +99,36 @@
                        [else (err s "Not a closure at application")]))]
 
     [CFunc (args body) (ValA (VClosure env args body) store)] 
-
+    [CBinOp (op left right) 
+            (interp-as env store ([(l s) left] [(r s2) right])
+                       (cond [(and (VNum? l) (VNum? r))
+                              (let ((nl (VNum-n l)) (nr (VNum-n r)))
+                                (case op
+                                  [(/ //) (if (zero? nr) (err s2 "divide by zero!")
+                                              (ValA (VNum ((case op ['/ /] ['// (lambda (x y) (floor (/ x y)))]) nl nr)) s2))]
+                                  [else (ValA (VNum ((case op ['+ +] ['- -] ['* *] ['% remainder] ['** expt]) nl nr)) s2)]))]
+                              
+                             [(and (VStr? l) (VStr? r))
+                              (case op
+                                ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]
+                                [else (err s2 "invalid operation on strings: " (symbol->string op))])]
+                             [else (err s2 "invalid operation!")]))]
+                                       
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
                        (ValA (python-prim1 prim v) s))]
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          ['== (ValA (VBool (equal? l r)) s2)]
+                          [(== is) (ValA (VBool (equal? l r)) s2)]
                           ['!= (ValA (VBool (not (equal? l r))) s2)]
-                          [else (err s2 "comparator not implemented" (symbol->string op))]))]))
+                          [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
+                                              (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
+                                             [(and (VStr? l) (VStr? r))
+                                              (VBool ((case op ['< string<?] ['<= string<=?] ['> string>?] ['>= string>=?]) (VStr-s l) (VStr-s r)))])
+                                             s2)]
+                                              
+                          [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
 
 (define (interp expr) : CVal
   (begin ;(display expr)

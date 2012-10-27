@@ -25,6 +25,7 @@
     [PyStr (s) (CStr s)]
     [PyTrue () (CTrue)]
     [PyFalse () (CFalse)]
+    [PyNone () (CNone)]
     [PyApp (f args) (CApp (desug f) (map desug args))]
     [PyId (x) (CId x)]
     [PyPass () (CNone)]
@@ -48,6 +49,7 @@
                  (create-ops ops (cons (desug left) (map desug rights))))]
     
     [PyUnary (op expr) (CUnary op (desug expr))]
+    [PyBinOp (op l r) (CBinOp op (desug l) (desug r))]
     [PyIf (c t e) (CIf (desug c) (desug t) (desug e))]
     
     [PyRaise (ex) (CError (desugar ex))]
