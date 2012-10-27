@@ -36,6 +36,8 @@ containers: dict, (set)
   [CId (x : symbol)]
   [CLet (x : symbol) (bind : CExp) (body : CExp)]
   
+  [CReturn (val : CExp)]
+  
   [CApp (fun : CExp) (args : (listof CExp))]
   [CFunc (args : (listof symbol)) (defaults : (listof CDefault)) (body : CExp)]
   
@@ -55,7 +57,8 @@ containers: dict, (set)
 
   [VFalse]
   [VNone]
-  [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)])
+  [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
+  [VReturn (val : CVal)])
 
 (define-type Ans
   [ValA (v : CVal) (env : Env) (store : Store)]

@@ -23,6 +23,12 @@
     [(empty? exprs) (CNone)]
     [(cons? exprs) (CSeq (first exprs) (cascade-seq (rest exprs)))]))
   
+(define (convert-defaults (defs : (listof PyDefault)))
+  (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd)))) defs))
+
+(define (dummy-func) 
+  (CFunc empty empty (CError (CStr "dummy func"))))
+
 (define (desug (expr : PyExpr)) : CExp
   (type-case PyExpr expr
     [PySeq (es) (cascade-seq (map desug es))]
@@ -45,10 +51,22 @@
     [PyPass () (CNone)]
     
     ;;use mutation to set
-    [PyFunDef (name args defaults body) [CNone]]
+    [PyFunDef (name args defaults body) 
+              (let ((thefun (make-id)))
+                (CSet! name 
+                       (CLet name (dummy-func)
+                             (CLet thefun 
+                                   (CFunc args 
+                                          (convert-defaults defaults)
+                                          (CSeq (desugar body) (CReturn (CNone))))
+                                   (CSeq (CSet! name (CId thefun)) (CId name))))))]
+    
+    [PyReturn (val) (CReturn (desug val))]
+    
     [PyFun (args defaults body) (CFunc args 
-                                       (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd)))) defaults) 
+                                       (convert-defaults defaults) 
                                        (desug body))]
+    
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
                               (CLet id (desug f) (CIf (CId id) (CId id) rest)))) (CFalse) exprs)]

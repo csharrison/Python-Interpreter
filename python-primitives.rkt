@@ -21,10 +21,11 @@ primitives here.
     [VTrue () "true"]
     [VFalse () "false"]
     [VNone () ""]
-    [VClosure (env args defs body) (error 'prim "Can't print closures yet")]))
+    [VClosure (env args defs body) (error 'prim "Can't print closures yet")]
+    [VReturn (val) (pretty val)]))
 
 (define (print arg)
-  (display (pretty arg)))
+  (begin (display (pretty arg)) (display "\n")))
 
 
 (define (python-prim1 (op : symbol) (arg : CVal)) : CVal

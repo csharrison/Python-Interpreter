@@ -69,7 +69,8 @@
     [VTrue () (VTrue)]
     [VFalse () (VFalse)]
     [VNone () (VFalse)]
-    [VClosure (e args defs b) (VTrue)]))
+    [VClosure (e args defs b) (VTrue)]
+    [VReturn (val) (BoolEval val)]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
@@ -110,8 +111,15 @@
           (interp-as env store([(v e s) bind])
                      (local ((define-values (ne ns) (update-env-store x v e s)))
                        (interp-full body ne ns)))]
+    
     [CSeq (ex1 ex2) (interp-as env store ([(v1 e1 s1) ex1]) 
-                             (interp-full ex2 e1 s1))]
+                             (type-case CVal v1
+                               [VReturn (val) (ValA val e1 s1)]
+                               [else (interp-full ex2 e1 s1)]))]
+    
+    [CReturn (val) (interp-as env store ([(v e s) val])
+                              (ValA (VReturn v) e s))]
+    
     [CApp (fun args)
           (interp-as env store ([(clos e s) fun])
                      (type-case CVal clos
@@ -135,7 +143,6 @@
                                   [(/ //) (if (zero? nr) (err e2 s2 "divide by zero!")
                                               (ValA (VNum ((case op ['/ /] ['// (lambda (x y) (floor (/ x y)))]) nl nr)) e2 s2))]
                                   [else (ValA (VNum ((case op ['+ +] ['- -] ['* *] ['% remainder] ['** expt]) nl nr)) e2 s2)]))]
-                              
                              [(and (VStr? l) (VStr? r))
                               (case op
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) e2 s2)]
@@ -159,7 +166,7 @@
                           [else (err e2 s2 "comparator not implemented: " (symbol->string op))]))]))
 
 (define (interp expr) : CVal
-  (begin ;(display expr)
+  (begin (display expr)
   (type-case Ans (interp-full expr (hash (list)) (hash (list)))
     [ValA (v e s) v]
     [ExnA (v e s) (begin (error 'interp (pretty v)) v)])))
