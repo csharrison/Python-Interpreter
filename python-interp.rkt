@@ -54,7 +54,7 @@
     [VTrue () (VTrue)]
     [VFalse () (VFalse)]
     [VNone () (VFalse)]
-    [VClosure (e args b) (VTrue)]))
+    [VClosure (e args defs b) (VTrue)]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
@@ -94,11 +94,18 @@
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
-                       [VClosure (clo-env ids body)
+                       [VClosure (clo-env ids defaults body)
                                  (Apply ids args env s clo-env body)]
                        [else (err s "Not a closure at application")]))]
-
-    [CFunc (args body) (ValA (VClosure env args body) store)] 
+    
+    ;;iterate through default arguments
+    [CFunc (args defaults body)
+           (local ((define (iter cdefs vdefs sto)
+                     (cond [(empty? cdefs) (ValA (VClosure env args vdefs body) sto)]
+                           [else (interp-as env sto ([(v s) (CD-expr (first cdefs))])
+                                            (iter (rest cdefs) (cons (VD (CD-id (first cdefs)) v) vdefs) s))])))
+             (iter defaults empty store))]
+          
     [CBinOp (op left right) 
             (interp-as env store ([(l s) left] [(r s2) right])
                        (cond [(and (VNum? l) (VNum? r))

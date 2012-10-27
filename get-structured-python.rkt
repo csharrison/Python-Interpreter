@@ -38,22 +38,28 @@ structure that you define in python-syntax.rkt
        ["False" (PyFalse)]
        ["None" (PyNone)]
        [_  (PyId (string->symbol id))])]
+    [(hash-table ('nodetype "Lambda")
+                 ('args args)
+                 ('body body))
+     (local ((define-values (defaults a) (get-structure args)))
+       (PyFun a defaults (get-structure body)))]
     [(hash-table ('nodetype "FunctionDef")
                  ('name name)
                  ('args args)
                  ('body body)
                  ('decorator_list dec_lst)
                  ('returns returns))
-     (PyFunDef (string->symbol name) 
-               (get-structure args) 
-               (PySeq (map get-structure body)))]
+     (local ((define-values (ds a) (get-structure args)))
+       (PyFunDef (string->symbol name) 
+                 a ds
+                 (PySeq (map get-structure body))))]
     [(hash-table ('nodetype "Return")
                  ('value value))
      (PyReturn (get-structure value))]
     [(hash-table ('nodetype "arg")
                  ('arg id)
                  ('annotation ann))
-     (Arg (string->symbol id))]
+     (string->symbol id)]
     [(hash-table ('nodetype "arguments")
                  ('args args)
                  ('defaults defaults)
@@ -67,10 +73,10 @@ structure that you define in python-syntax.rkt
              (define as (map get-structure args))
              (define reg-args (take as (- (length as) (length defs))))
              (define def-args (drop as (- (length as) (length defs)))))
-       (append (map (lambda (a v) (Default (Arg-id a) v)) def-args defs)
-                     reg-args
-                     (if (equal? #\nul vararg) empty (VarArg (string->symbol vararg)))
-                     (if (equal? #\nul kwarg) empty (Kwarg (string->symbol kwarg)))))]
+       (values (map (lambda (a v) (Default a v)) def-args defs)
+                     reg-args))]
+                     ;(if (equal? #\nul vararg) empty (VarArg (string->symbol vararg)))
+                     ;(if (equal? #\nul kwarg) empty (Kwarg (string->symbol kwarg)))))]
     [(hash-table ('nodetype "List")
                  ('ctx ctx)
                  ('elts elts))

@@ -25,19 +25,19 @@ ___fail
 (define-type-alias Lib (CExp -> CExp))
 
 (define print-lambda
-  (CFunc (list 'to-print)
+  (CFunc (list 'to-print) empty
     (CPrim1 'print (CId 'to-print))))
 
 (define assert-true-lambda
-  (CFunc (list 'check-true)
+  (CFunc (list 'check-true) empty
     (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
 
 (define assert-false-lambda
-  (CFunc (list 'check-true)
+  (CFunc (list 'check-true) empty
     (CIf (CId 'check-true) (CError (CStr "Assert failed")) (CTrue))))
 
 (define exception-lambda
-  (CFunc (list 'e)
+  (CFunc (list 'e) empty
          (CError (CId 'e))))
 
 

@@ -1,10 +1,7 @@
 #lang plai-typed
 
-(define-type PyArg
-  [Arg (id : symbol)] ;; id
-  [Default (id : symbol) (expr : PyExpr)] ;;id=expr
-  [Kwarg (id : symbol)] ;;**id
-  [VarArg (id : symbol)]);;*id
+(define-type PyDefault
+  [Default (id : symbol) (val : PyExpr)])
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
@@ -25,7 +22,9 @@
   
   [PyId (x : symbol)]
   
-  [PyFunDef (name : symbol) (args : (listof PyArg )) (body : PyExpr)]
+  [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (listof PyDefault)) (body : PyExpr)]
+  [PyFun (args : (listof symbol)) (defaults : (listof PyDefault))  (body : PyExpr)]
+  
   [PyReturn (val : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr))]
   

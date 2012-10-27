@@ -5,7 +5,18 @@
 This is the core language; it is just borrowing a few things from 
 ParselTongue.
 
+sequence types:
+strings
+lists
+tuples
+ranges
+
+containers: dict, (set)
+
 |#
+
+(define-type CDefault
+  [CD (id : symbol) (expr : CExp)])
 
 (define-type CExp
   [CNum (n : number)]
@@ -25,7 +36,7 @@ ParselTongue.
   [CLet (x : symbol) (bind : CExp) (body : CExp)]
   
   [CApp (fun : CExp) (args : (listof CExp))]
-  [CFunc (args : (listof symbol)) (body : CExp)]
+  [CFunc (args : (listof symbol)) (defaults : (listof CDefault)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
@@ -34,6 +45,8 @@ ParselTongue.
 ;;objects
 ; questionable things: notimplemented, ellipses
 
+(define-type VDefault
+  [VD (id : symbol) (val : CVal)])
 (define-type CVal
   [VNum (n : number)]
   [VStr (s : string)]
@@ -41,7 +54,7 @@ ParselTongue.
 
   [VFalse]
   [VNone]
-  [VClosure (env : Env) (args : (listof symbol)) (body : CExp)])
+  [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)])
 
 (define-type Ans
   [ValA (v : CVal) (store : Store)]

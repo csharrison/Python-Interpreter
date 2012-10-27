@@ -21,7 +21,7 @@ primitives here.
     [VTrue () "true"]
     [VFalse () "false"]
     [VNone () ""]
-    [VClosure (env args body) (error 'prim "Can't print closures yet")]))
+    [VClosure (env args defs body) (error 'prim "Can't print closures yet")]))
 
 (define (print arg)
   (display (pretty arg)))

@@ -30,6 +30,9 @@
     [PyId (x) (CId x)]
     [PyPass () (CNone)]
     
+    ;;use mutation to set
+    [PyFunDef (name args defaults body) [CNone]]
+    
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
                               (CLet id (desug f) (CIf (CId id) (CId id) rest)))) (CFalse) exprs)]
