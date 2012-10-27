@@ -32,6 +32,8 @@
     
     ;;use mutation to set
     [PyFunDef (name args defaults body) [CNone]]
+    [PyFun (args defaults body) (CFunc args (map 
+                                             (lambda (pyd) (CD (defaults) (desug body))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))

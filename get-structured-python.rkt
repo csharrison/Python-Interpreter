@@ -73,7 +73,7 @@ structure that you define in python-syntax.rkt
              (define as (map get-structure args))
              (define reg-args (take as (- (length as) (length defs))))
              (define def-args (drop as (- (length as) (length defs)))))
-       (values (map (lambda (a v) (Default a v)) def-args defs)
+       (values (map (lambda (a v) (PD a v)) def-args defs)
                      reg-args))]
                      ;(if (equal? #\nul vararg) empty (VarArg (string->symbol vararg)))
                      ;(if (equal? #\nul kwarg) empty (Kwarg (string->symbol kwarg)))))]

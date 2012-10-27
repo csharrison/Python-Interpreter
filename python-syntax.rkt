@@ -1,7 +1,7 @@
 #lang plai-typed
 
 (define-type PyDefault
-  [Default (id : symbol) (val : PyExpr)])
+  [PD (id : symbol) (val : PyExpr)])
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
