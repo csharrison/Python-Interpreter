@@ -1,0 +1,8 @@
+print((lambda x : x + 1)(10))
+print("\n")
+print("\n")
+print((lambda x,y=10 : x + y)(3))
+print("\n")
+print("\n")
+print((lambda x,y=10 : x + y)(1,2))
+print("hi\n")
