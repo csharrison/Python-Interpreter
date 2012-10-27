@@ -36,12 +36,21 @@
 ;;the bulk of the AppC case
 ;;recursively builds up the arguments (binds their values to ids)
 ;;and updates the closures environment / callers store
-(define (Apply (ids : (listof symbol)) (vals : (listof CExp)) (caller-env : Env) (sto : Store) (clo-env : Env) (clo-body : CExp)) : Ans
-  (cond [(and (empty? ids) (empty? vals)) (interp-full clo-body clo-env sto)]
+(define (Apply (ids : (listof symbol)) (vals : (listof CExp)) (defs : (listof VDefault)) (caller-env : Env) (sto : Store) (clo-env : Env) (clo-body : CExp)) : Ans
+  (cond [(and (empty? ids) (empty? vals) (empty? defs)) (interp-full clo-body clo-env sto)]
+        [(and (empty? ids) (cons? vals) (empty? defs))
+         (err sto "Application failed with an arity mismatch")]
+        [(and (empty? ids) (cons? vals) (cons? defs))
+         (interp-as caller-env sto ([(v s) (first vals)])
+                    (local ((define-values (newenv newsto) (update-env-store (VD-id (first defs)) v clo-env s)))
+                      (Apply ids (rest vals) (rest defs) caller-env newsto newenv clo-body)))]
+        [(and (empty? ids) (empty? vals) (cons? defs))
+                    (local ((define-values (newenv newsto) (update-env-store (VD-id (first defs)) (VD-val (first defs)) clo-env sto)))
+                      (Apply ids vals (rest defs) caller-env newsto newenv clo-body))]
         [(and (cons? ids) (cons? vals))
          (interp-as caller-env sto ([(v s) (first vals)])
                     (local ((define-values  (newenv newsto) (update-env-store (first ids) v clo-env s)))
-                      (Apply (rest ids) (rest vals) caller-env newsto newenv clo-body)))]
+                      (Apply (rest ids) (rest vals) defs caller-env newsto newenv clo-body)))]
                       
         [else (err sto "Application failed with arity mismatch")]))
 
@@ -95,7 +104,7 @@
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
                        [VClosure (clo-env ids defaults body)
-                                 (Apply ids args env s clo-env body)]
+                                 (Apply ids args defaults env s clo-env body)]
                        [else (err s "Not a closure at application")]))]
     
     ;;iterate through default arguments

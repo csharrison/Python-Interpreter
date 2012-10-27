@@ -47,6 +47,7 @@ containers: dict, (set)
 
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
+
 (define-type CVal
   [VNum (n : number)]
   [VStr (s : string)]

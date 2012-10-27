@@ -15,12 +15,14 @@
   (cond [(empty? (rest lst)) empty]
         [else (cons (first lst) (take-last (rest lst)))]))
 
+(define (cascade-seq (exprs : (listof CExp))) : CExp
+  (cond
+    [(empty? exprs) (CNone)]
+    [(cons? exprs) (CSeq (first exprs) (cascade-seq (rest exprs)))]))
+
 (define (desug (expr : PyExpr)) : CExp
   (type-case PyExpr expr
-    [PySeq (es) 
-           (if (empty? es) 
-               (CNone)
-               (foldr (lambda (e1 e2) (CSeq e2 (desug e1))) (desug (first es)) (rest es)))]
+    [PySeq (es) (cascade-seq (map desug es))]
     [PyNum (n) (CNum n)]
     [PyStr (s) (CStr s)]
     [PyTrue () (CTrue)]
@@ -32,8 +34,9 @@
     
     ;;use mutation to set
     [PyFunDef (name args defaults body) [CNone]]
-    [PyFun (args defaults body) (CFunc args (map 
-                                             (lambda (pyd) (CD (defaults) (desug body))]
+    [PyFun (args defaults body) (CFunc args 
+                                       (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd)))) defaults) 
+                                       (desug body))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
