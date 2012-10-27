@@ -28,7 +28,8 @@ ParselTongue.
   [CFunc (args : (listof symbol)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]
-  [CPrim2 (prim : symbol) (larg : CExp) (rarg : CExp)])
+  [Compare (op : symbol) (l : CExp) (r : CExp)]
+  )
 ;;objects
 ; questionable things: notimplemented, ellipses
 

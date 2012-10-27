@@ -16,6 +16,9 @@
   [PyOr (es : (listof PyExpr))]
   [PyAnd (es : (listof PyExpr))]
   
+  [PyCompare (left : PyExpr) (ops : (listof symbol)) (right : (listof PyExpr))]
+  
+  
   [PyUnary (op : symbol) (expr : PyExpr)];+,-,~,not
   
   [PyList (elts : (listof PyExpr))]

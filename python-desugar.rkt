@@ -38,6 +38,15 @@
                               (CLet id (desug f) 
                                     (CIf (CId id) rest (CId id))))) (desug (last exprs)) (take-last exprs))]   
 
+    ;;basically fold And over all the compares
+    [PyCompare (left ops rights)
+               (local ((define (create-ops ops elts)
+                         (cond [(empty? (rest ops)) (Compare (first ops) (first elts) (second elts))]
+                               [else (let ((id (make-id)))
+                                       (CLet id (Compare (first ops) (first elts) (second elts)) 
+                                             (CIf (CId id) (create-ops (rest ops) (rest elts)) (CId id))))])))
+                 (create-ops ops (cons (desug left) (map desug rights))))]
+    
     [PyUnary (op expr) (CUnary op (desug expr))]
     [PyIf (c t e) (CIf (desug c) (desug t) (desug e))]
     

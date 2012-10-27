@@ -94,7 +94,12 @@
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
                        (ValA (python-prim1 prim v) s))]
-    [else (begin (display expr) (err store "Not implemented"))]))
+    [Compare (op left right)
+             (interp-as env store ([(l s) left] [(r s2) right])
+                        (case op
+                          ['== (ValA (VBool (equal? l r)) s2)]
+                          ['!= (ValA (VBool (not (equal? l r))) s2)]
+                          [else (err s2 "comparator not implemented" (symbol->string op))]))]))
 
 (define (interp expr) : CVal
   (begin ;(display expr)

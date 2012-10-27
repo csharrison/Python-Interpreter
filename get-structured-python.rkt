@@ -75,6 +75,24 @@ structure that you define in python-syntax.rkt
                  ('elts elts))
      ;(PyList (map get-structure elts))]
      (PyNotImplemented)]
+    [(hash-table ('nodetype "Compare")
+                 ('left left)
+                 ('ops ops)
+                 ('comparators comparators))
+     (PyCompare (get-structure left)
+                (map get-structure ops)
+                (map get-structure comparators))]
+    [(hash-table ('nodetype "Eq")) '==]
+    [(hash-table ('nodetype "NotEq")) '!=]
+    [(hash-table ('nodetype "Lt")) '<]
+    [(hash-table ('nodetype "LtE")) '<=]
+    [(hash-table ('nodetype "Gt")) '>]  
+    [(hash-table ('nodetype "GtE")) '>=]
+    [(hash-table ('nodetype "Is")) 'is]
+    [(hash-table ('nodetype "IsNot")) 'isnot]  
+    [(hash-table ('nodetype "In")) 'in]
+    [(hash-table ('nodetype "NotIn")) 'notin]  
+    
     [(hash-table ('nodetype "If")
                  ('test test)
                  ('body body)
