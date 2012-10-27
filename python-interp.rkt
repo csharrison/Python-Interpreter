@@ -95,7 +95,7 @@
     [CId (x) (type-case (optionof Location) (hash-ref env x)
                [some (loc) (ValA (some-v (hash-ref store loc)) store)]
                [none () (err store "Unbound identifier: " (symbol->string x))])]
-    
+    [CSet! (id val) (interp-full val env store)]
     [CLet (x bind body)
           (interp-as env store([(v s) bind])
                      (local ((define-values (ne ns) (update-env-store x v env s)))
