@@ -58,8 +58,8 @@ containers: dict, (set)
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)])
 
 (define-type Ans
-  [ValA (v : CVal) (store : Store)]
-  [ExnA (v : CVal) (store : Store)])
+  [ValA (v : CVal) (env : Env) (store : Store)]
+  [ExnA (v : CVal) (env : Env) (store : Store)])
 
 (define-type-alias Location number)
 (define-type-alias Env (hashof symbol Location))
