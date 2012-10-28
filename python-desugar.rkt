@@ -58,14 +58,14 @@
                              (CLet thefun 
                                    (CFunc args 
                                           (convert-defaults defaults)
-                                          (CSeq (desugar body) (CReturn (CNone))))
+                                          (desugar body))
                                    (CSeq (CSet! name (CId thefun)) (CId name))))))]
     
     [PyReturn (val) (CReturn (desug val))]
     
     [PyFun (args defaults body) (CFunc args 
                                        (convert-defaults defaults) 
-                                       (desug body))]
+                                       (CReturn (desug body)))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))

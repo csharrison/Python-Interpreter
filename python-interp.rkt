@@ -40,7 +40,10 @@
   (cond
     [(and (empty? ids) (empty? vals) (empty? defs)) 
      (type-case Ans (interp-full clo-body clo-env sto)
-       [ValA (v e s) (ValA v caller-env s)]
+       [ValA (v e s) 
+             (type-case CVal v
+               [VReturn (value) (ValA value caller-env s)]
+               [else (ValA (VNone) caller-env s)])]
        [ExnA (v e s) (ExnA v e s)])]
     [(and (empty? ids) (cons? vals) (empty? defs))
      (err caller-env sto "Application failed with an arity mismatch")]
@@ -112,10 +115,11 @@
                      (local ((define-values (ne ns) (update-env-store x v e s)))
                        (interp-full body ne ns)))]
     
-    [CSeq (ex1 ex2) (interp-as env store ([(v1 e1 s1) ex1]) 
-                             (type-case CVal v1
-                               [VReturn (val) (ValA val e1 s1)]
-                               [else (interp-full ex2 e1 s1)]))]
+    [CSeq (ex1 ex2) (interp-as env store ([(v1 e1 s1) ex1])
+                               (begin
+                                      (type-case CVal v1
+                                        [VReturn (val) (ValA v1 e1 s1)]
+                                        [else (interp-full ex2 e1 s1)])))]
     
     [CReturn (val) (interp-as env store ([(v e s) val])
                               (ValA (VReturn v) e s))]
@@ -166,7 +170,7 @@
                           [else (err e2 s2 "comparator not implemented: " (symbol->string op))]))]))
 
 (define (interp expr) : CVal
-  (begin (display expr)
+  (begin ;(display expr)
   (type-case Ans (interp-full expr (hash (list)) (hash (list)))
     [ValA (v e s) v]
     [ExnA (v e s) (begin (error 'interp (pretty v)) v)])))

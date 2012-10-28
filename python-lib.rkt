@@ -14,8 +14,6 @@ that calls the primitive `print`.
 we need to define: 
 ___assertIn
 ___assertNotIn
-___assertEqual
-___assertNotEqual
 ___assertRaises
 ___assertIs
 ___fail
@@ -36,11 +34,18 @@ ___fail
   (CFunc (list 'check-true) empty
     (CIf (CId 'check-true) (CError (CStr "Assert failed")) (CTrue))))
 
+(define assert-equal-lambda
+  (CFunc (list 'first-elt 'second-elt) empty
+         (CIf (Compare '== (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
+(define assert-not-equal-lambda
+  (CFunc (list 'first-elt 'second-elt) empty
+         (CIf (Compare '!= (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
+
 (define exception-lambda
   (CFunc (list 'e) empty
          (CError (CId 'e))))
-
-
 (define true-val
   (CTrue))
 
@@ -51,6 +56,8 @@ ___fail
   (list (bind 'print print-lambda)
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception exception-lambda)
+        (bind '___assertEqual assert-equal-lambda)
+        (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)))
 
