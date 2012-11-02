@@ -2,9 +2,13 @@
 
 (require "python-syntax.rkt"
          "python-core-syntax.rkt")
-
-(define (Err str)
-  (CError (CStr str)))
+(require (typed-in racket 
+                   (flatten : ((listof (listof 'a)) -> (listof 'a)))))
+;;err : calls an error with all input strings appended
+(define-syntax Err
+  (syntax-rules ()
+    [(Err e s) (CError (CStr s))]
+    [(Err e s ...) (CError (CStr (foldr string-append "" (list s ...))))]))
 
 (define make-id
   (let ((count 0))
@@ -28,6 +32,32 @@
 
 (define (dummy-func) 
   (CFunc empty empty (CError (CStr "dummy func"))))
+
+;; cascade-lets will build up the nested lets, and use body as the
+;; eventual body, preserving order of evaluation of the expressions
+(define (cascade-lets (ids : (listof symbol))
+                      (exprs : (listof CExp))
+                      (body : CExp)) : CExp
+  (cond [(empty? ids) body]
+        [(cons? ids)
+         (CLet (first ids) (first exprs) (cascade-lets (rest ids) (rest exprs) body))]))
+;;js style static code reading for hoisting
+(define (get-assigns (expr : PyExpr)) : (listof symbol)
+  (type-case PyExpr expr
+    [PySeq (es) (flatten (map get-assigns es))]
+    [PyIf (c t e) (flatten (map get-assigns (list c t e)))]
+    [PyAssign (targets value)
+              (cond [(empty? (rest targets))
+                     (type-case PyExpr (first targets)
+                       [PyId (id) (list id)]
+                       [else (begin (error 'desugar "no assign case for non ids") empty)])]
+                    [else (begin (error 'desugar "no assign for iterables") empty)])]
+    [else empty]))
+(define (hoist (body : PyExpr)) : CExp
+  (let ((ids (get-assigns body)))
+    (cascade-lets ids (map (lambda (x) (Err "Unbound local variable: " (symbol->string x))) ids) (desug body))))
+
+
 
 (define (desug (expr : PyExpr)) : CExp
   (type-case PyExpr expr
