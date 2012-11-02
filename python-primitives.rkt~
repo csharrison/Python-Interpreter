@@ -19,13 +19,16 @@ primitives here.
     [VNum (n) (to-string n)]
     [VStr (s) s]
     [VTrue () "true"]
-    [VClosure (env args body) (error 'prim "Can't print closures yet")]))
-  
+    [VFalse () "false"]
+    [VNone () ""]
+    [VClosure (env args defs body) (error 'prim "Can't print closures yet")]
+    [VReturn (val) (pretty val)]))
 
 (define (print arg)
-  (display (pretty arg)))
+  (begin (display (pretty arg)) (display "\n")))
 
-(define (python-prim1 op arg)
+
+(define (python-prim1 (op : symbol) (arg : CVal)) : CVal
   (case op
     [(print) (begin (print arg) arg)]))
 

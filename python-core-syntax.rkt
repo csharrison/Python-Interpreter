@@ -44,6 +44,7 @@ containers: dict, (set)
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
+  [CNotDefined]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses
@@ -54,15 +55,16 @@ containers: dict, (set)
   [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]
-
   [VFalse]
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
-  [VReturn (val : CVal)])
+  [VReturn (val : CVal)]
+  
+  [VNotDefined])
 
 (define-type Ans
-  [ValA (v : CVal) (env : Env) (store : Store)]
-  [ExnA (v : CVal) (env : Env) (store : Store)])
+  [ValA (v : CVal) (store : Store)]
+  [ExnA (v : CVal) (store : Store)])
 
 (define-type-alias Location number)
 (define-type-alias Env (hashof symbol Location))

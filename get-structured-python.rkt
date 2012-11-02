@@ -46,7 +46,7 @@ structure that you define in python-syntax.rkt
                  ('args args)
                  ('body body))
      (local ((define-values (defaults a) (get-structure args)))
-       (PyFun a defaults (get-structure body)))]
+       (PyFun a defaults (PyReturn (get-structure body))))]
     [(hash-table ('nodetype "FunctionDef")
                  ('name name)
                  ('args args)
