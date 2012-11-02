@@ -1,9 +1,8 @@
-<<<<<<< HEAD
+
 *.dep
 *.co
 *.zo
-=======
 compiled/
 *.swp
 *~
->>>>>>> upstream/master
+
