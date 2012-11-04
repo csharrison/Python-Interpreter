@@ -20,8 +20,9 @@ primitives here.
     [VStr (s) s]
     [VTrue () "true"]
     [VFalse () "false"]
-    [VNone () ""]
-    [VClosure (env args defs body) (error 'prim "Can't print closures yet")]
+    [VNone () "None"]
+    [VNotDefined () "Undefined"]
+    [VClosure (env args defs body) "(closure ...)"]
     [VReturn (val) (pretty val)]))
 
 (define (print arg)

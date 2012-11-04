@@ -7,8 +7,8 @@
 ;;err : calls an error with all input strings appended
 (define-syntax Err
   (syntax-rules ()
-    [(Err e s) (CError (CStr s))]
-    [(Err e s ...) (CError (CStr (foldr string-append "" (list s ...))))]))
+    [(Err s) (CError (CStr s))]
+    [(Err s ...) (CError (CStr (foldr string-append "" (list s ...))))]))
 
 (define make-id
   (let ((count 0))
@@ -30,8 +30,7 @@
 (define (convert-defaults (defs : (listof PyDefault)))
   (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd)))) defs))
 
-(define (dummy-func) 
-  (CFunc empty empty (CError (CStr "dummy func"))))
+(define dummy-func (CFunc empty empty (CError (CStr "dummy func"))))
 
 ;; cascade-lets will build up the nested lets, and use body as the
 ;; eventual body, preserving order of evaluation of the expressions
@@ -52,11 +51,14 @@
                        [PyId (id) (list id)]
                        [else (begin (error 'desugar "no assign case for non ids") empty)])]
                     [else (begin (error 'desugar "no assign for iterables") empty)])]
+    [PyFunDef (name args defaults body) (list name)]
     [else empty]))
-(define (hoist (body : PyExpr)) : CExp
-  (let ((ids (get-assigns body)))
-    (cascade-lets ids (map (lambda (x) (Err "Unbound local variable: " (symbol->string x))) ids) (desug body))))
 
+(define (hoist/desug (body : PyExpr) (args : (listof symbol))) : CExp
+  (let ((ids (filter (lambda (x) (not (member x args))) (get-assigns body))))
+    (cascade-lets ids (map (lambda (x) (CNotDefined)) ids) (desug body))))
+(define (get-args args defaults)
+  (append args (map (lambda (x) (PD-id x)) defaults)))
 
 
 (define (desug (expr : PyExpr)) : CExp
@@ -80,22 +82,18 @@
     
     [PyPass () (CNone)]
     
-    ;;use mutation to set
     [PyFunDef (name args defaults body) 
               (let ((thefun (make-id)))
-                (CSet! name 
-                       (CLet name (dummy-func)
-                             (CLet thefun 
-                                   (CFunc args 
-                                          (convert-defaults defaults)
-                                          (desugar body))
-                                   (CSeq (CSet! name (CId thefun)) (CId name))))))]
+                (CSeq (CSet! name dummy-func)
+                      (CLet thefun
+                            (CFunc args 
+                                   (convert-defaults defaults)
+                                   (hoist/desug body (get-args args defaults)))
+                            (CSet! name (CId thefun)))))]
     
     [PyReturn (val) (CReturn (desug val))]
     
-    [PyFun (args defaults body) (CFunc args 
-                                       (convert-defaults defaults) 
-                                       (CReturn (desug body)))]
+    [PyFun (args defaults body) (CFunc args (convert-defaults defaults) (desug body))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
@@ -125,4 +123,4 @@
 
 (define (desugar expr)
   (begin ;(display expr)
-  (desug expr)))
+  (hoist/desug expr empty)))
