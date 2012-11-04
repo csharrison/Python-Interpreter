@@ -153,7 +153,7 @@
                               (case op
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]
                                 [else (err s2 "invalid operation on strings: " (symbol->string op))])]
-                             [else (err s2 "invalid operation!")]))]
+                             [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
                                        
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])

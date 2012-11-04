@@ -20,8 +20,8 @@ primitives here.
     [VStr (s) s]
     [VTrue () "true"]
     [VFalse () "false"]
-    [VNone () ""]
-    [VNotDefined () ""]
+    [VNone () "None"]
+    [VNotDefined () "Undefined"]
     [VClosure (env args defs body) "(closure ...)"]
     [VReturn (val) (pretty val)]))
 

@@ -54,10 +54,11 @@
     [PyFunDef (name args defaults body) (list name)]
     [else empty]))
 
-(define (hoist/desug (body : PyExpr)) : CExp
-  (let ((ids (get-assigns body)))
+(define (hoist/desug (body : PyExpr) (args : (listof symbol))) : CExp
+  (let ((ids (filter (lambda (x) (not (member x args))) (get-assigns body))))
     (cascade-lets ids (map (lambda (x) (CNotDefined)) ids) (desug body))))
-
+(define (get-args args defaults)
+  (append args (map (lambda (x) (PD-id x)) defaults)))
 
 
 (define (desug (expr : PyExpr)) : CExp
@@ -87,7 +88,7 @@
                       (CLet thefun
                             (CFunc args 
                                    (convert-defaults defaults)
-                                   (hoist/desug body))
+                                   (hoist/desug body (get-args args defaults)))
                             (CSet! name (CId thefun)))))]
     
     [PyReturn (val) (CReturn (desug val))]
@@ -122,4 +123,4 @@
 
 (define (desugar expr)
   (begin ;(display expr)
-  (hoist/desug expr)))
+  (hoist/desug expr empty)))
