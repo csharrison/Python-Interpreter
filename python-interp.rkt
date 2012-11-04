@@ -26,12 +26,26 @@
        [ValA (v0 s0) (interp-as env0 s0 ([(v-rest s-rest) x-rest] ...) body)]
        [ExnA (exn-val exn-sto) (ExnA exn-val exn-sto)])]))
 
+
+;;use only for local shit
 (define update-env-store
   (let ((count 0))
     (lambda (id (val : CVal) env store) : (Env * Store)
       (begin (set! count (add1 count))
-             (values (hash-set env id count)
-                     (hash-set store count val))))))
+             (type-case Env env
+               [Ev (locals nonlocals globals) 
+                   (values (Ev (hash-set locals id count) nonlocals globals)
+                           (hash-set store count val))])))))
+
+;;go through each of our scopes
+(define (lookup sym env)
+  (type-case Env env
+    [Ev (locals nonlocals globals)
+        (type-case (optionof Location) (hash-ref locals sym)
+          [some (loc) (some loc)]
+          [none () (type-case (optionof Location) (hash-ref nonlocals sym)
+                     [some (loc) (some loc)]
+                     [none () (hash-ref globals sym)])])]))
 
 ;;the bulk of the AppC case
 ;;recursively builds up the arguments (binds their values to ids)
@@ -103,12 +117,12 @@
                     (interp-full (if (VTrue? (BoolEval v)) then_block else_block) env s))]
     
     [CId (x) 
-         (type-case (optionof Location) (hash-ref env x)
+         (type-case (optionof Location) (lookup x env)
                [some (loc) (ValA (some-v (hash-ref store loc)) store)]
                [none () (err store "Unbound identifier: " (symbol->string x))])]
     
     [CSet! (id val) (interp-as env store ([(v s) val])
-                               (type-case (optionof Location) (hash-ref env id)
+                               (type-case (optionof Location) (lookup id env)
                                  [some (loc) (ValA v (hash-set s loc v))]
                                  [none () (err s "identifier '" (symbol->string id) "' not found in environment")]))]
     
@@ -171,9 +185,10 @@
                                               
                           [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
 
+
 (define (interp expr) : CVal
   (begin ;(display expr)
-  (type-case Ans (interp-full expr (hash (list)) (hash (list)))
+  (type-case Ans (interp-full expr (Ev (hash empty) (hash empty) (hash empty)) (hash empty))
     [ValA (v s) v]
     [ExnA (v s) (begin (error 'interp-derp (pretty v)) v)])))
 

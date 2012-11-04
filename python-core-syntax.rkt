@@ -67,6 +67,10 @@ containers: dict, (set)
   [ExnA (v : CVal) (store : Store)])
 
 (define-type-alias Location number)
-(define-type-alias Env (hashof symbol Location))
+
 (define-type-alias Store (hashof Location CVal))
+
+(define-type Env
+  [Ev (locals : (hashof symbol Location)) (nonlocals : (hashof symbol Location)) (globals : (hashof symbol Location))])
+
 
