@@ -1,7 +1,5 @@
 The final project for CS173 - An interpreter for Python
 
-Our core difference from ParselTongue is the use of EPS, Environment Passing Style.
-
 Because in Python any expression can introduce a new identifier, we pass the any new environments on to any next expression, just like the store.
 
 The exception case is the CApp case, in which case we use the callers environment to return to, not the callees.
