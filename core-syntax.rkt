@@ -75,6 +75,6 @@ containers: dict, (set)
 (define-type-alias Store (hashof Location CVal))
 
 (define-type Env
-  [Ev (locals : (hashof symbol Location)) (nonlocals : (hashof symbol Location)) (globals : (hashof symbol Location))])
+  [Ev (locals : (hashof symbol Location)) (nonlocals : (hashof symbol Location))])
 
 

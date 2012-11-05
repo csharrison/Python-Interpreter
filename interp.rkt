@@ -27,22 +27,24 @@
        [ExnA (exn-val exn-sto) (ExnA exn-val exn-sto)])]))
 
 
+(define globals (hash empty))
+
 (define update-env-store
   (let ((count 0))
     (lambda (id (val : CVal) env store (type : symbol)) : (Env * Store)
       (begin (set! count (add1 count))
              (type-case Env env
-               [Ev (locals nonlocals globals)
+               [Ev (locals nonlocals)
                    (values (case type
-                             ['local (Ev (hash-set locals id count) nonlocals globals)]
-                             ['nonlocal (Ev locals (hash-set nonlocals id count) globals)]
-                             ['global (Ev locals nonlocals (hash-set globals id count))])
+                             ['local (Ev (hash-set locals id count) nonlocals)]
+                             ['nonlocal (Ev locals (hash-set nonlocals id count))]
+                             ['global (begin (set! globals (hash-set globals id count)) (Ev locals nonlocals))])
                            (hash-set store count val))])))))
 
 ;;go through each of our scopes
 (define (lookup sym env type)
   (type-case Env env
-    [Ev (locals nonlocals globals)
+    [Ev (locals nonlocals)
         (case type
           ['local
            (type-case (optionof Location) (hash-ref locals sym)
@@ -55,11 +57,11 @@
 
 (define (reset-scopes env)
   (type-case Env env
-    [Ev (locals nonlocals globals)
+    [Ev (locals nonlocals)
         (local ((define (r locs nonlocs)
                   (if (empty? locs) nonlocs
                       (r (rest locs) (hash-set nonlocs (first locs) (some-v (hash-ref locals (first locs))))))))
-          (Ev (hash empty) (r (hash-keys locals) nonlocals) globals))]))
+          (Ev (hash empty) (r (hash-keys locals) nonlocals)))]))
 
 ;;the bulk of the AppC case
 ;;recursively builds up the arguments (binds their values to ids)
@@ -216,7 +218,7 @@
 
 (define (interp expr) : CVal
   (begin ;(display expr)
-  (type-case Ans (interp-full expr (Ev (hash empty) (hash empty) (hash empty)) (hash empty))
+  (type-case Ans (interp-full expr (Ev (hash empty) (hash empty)) (hash empty))
     [ValA (v s) v]
     [ExnA (v s) (begin (error 'interp-derp (pretty v)) v)])))
 
