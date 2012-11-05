@@ -44,7 +44,7 @@
 
 (define (modify-scope id (h : (hashof symbol symbol)) type)
   (type-case (optionof symbol) (hash-ref h id)
-    [some (s) h]
+    [some (s) h];;this comes from the fact that doing nonlocal before a global makes it nonlocal (or any combination)
     [none () (hash-set h id type)]))
 ;;js style static code reading for hoisting
 (define (get-assigns (expr : PyExpr) global?) : (hashof symbol symbol)
@@ -66,19 +66,21 @@
                                 [PyId (id) (modify-scope id scope (if global? 'global 'local))]
                                 [else (begin (error 'desugar "no assign case for non ids") scope)])]
                              [else (begin (error 'desugar "no assign for iterables") scope)])]
-             [PyFunDef (name args defaults body) (modify-scope name scope 'local)]
+             [PyFunDef (name args defaults body) (modify-scope name scope (if global? 'global 'local))]
              [else scope])))
     (get-scope expr (hash empty))))
 
 (define (get-type scope type)
   (filter (lambda (x) (symbol=? type (some-v (hash-ref scope x)))) (hash-keys scope)))
 
+;;puts locals, nonlocals, and globals on the let cascade
 (define (hoist/desug (body : PyExpr) (args : (listof symbol)) global?) : CExp
   (local ((define scope (get-assigns body global?))
           (define locals (filter (lambda (x) (not (member x args))) (get-type scope 'local)))
           (define globals (get-type scope 'global))
           (define nonlocals (get-type scope 'nonlocal)))
-    (if global? (cascade-lets (hash-keys scope) 'global (map (lambda (x) (CNotDefined)) (hash-keys scope)) (desug body scope))
+    (if global? (begin ;(display scope)
+        (cascade-lets (hash-keys scope) 'global (map (lambda (x) (CNotDefined)) (hash-keys scope)) (desug body scope)))
         (cascade-lets locals 'local (map (lambda (x) (CNotDefined)) locals)
                       (cascade-lets nonlocals 'nonlocal (map (lambda (x) (CNotDefined)) nonlocals)
                                     (cascade-lets globals 'global (map (lambda (x) (CNotDefined)) globals)

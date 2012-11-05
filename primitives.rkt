@@ -21,7 +21,7 @@ primitives here.
     [VTrue () "true"]
     [VFalse () "false"]
     [VNone () "None"]
-    [VNotDefined () "Undefined"]
+    [VNotDefined () "Not Defined"]
     [VClosure (env args defs body) "(closure ...)"]
     [VReturn (val) (pretty val)]))
 
