@@ -32,9 +32,13 @@ containers: dict, (set)
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CUnary (op : symbol) (expr : CExp)];+,-,~,not
   
-  [CSet! (id : symbol) (val : CExp)]
+  [CSet! (id : symbol) (val : CExp) (type : symbol)]
+  
   [CId (x : symbol)]
-  [CLet (x : symbol) (bind : CExp) (body : CExp)]
+  [CGlobalId (x : symbol)]
+  [CNonLocalId (x : symbol)]
+  
+  [CLet (x : symbol) (type : symbol) (bind : CExp) (body : CExp)]
   
   [CReturn (val : CExp)]
   

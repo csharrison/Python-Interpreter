@@ -21,6 +21,8 @@
   [PyList (elts : (listof PyExpr))]
   
   [PyId (x : symbol)]
+  [PyGlobal (x : symbol)]
+  [PyNonLocal (x : symbol)]
   
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
   

@@ -34,6 +34,12 @@ structure that you define in python-syntax.rkt
                  ('targets targets)
                  ('value value))
      (PyAssign (map get-structure targets) (get-structure value))]
+    [(hash-table ('nodetype "Global")
+                 ('names names))
+     (PySeq (map (lambda (x) (PyGlobal (string->symbol x))) names))]
+    [(hash-table ('nodetype "Nonlocal")
+                 ('names names))
+     (PySeq (map (lambda (x) (PyNonLocal (string->symbol x))) names))]
     [(hash-table ('nodetype "Name")
                  ('ctx _)        ;; ignoring ctx for now
                  ('id id))

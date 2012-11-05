@@ -1,6 +1,6 @@
 #lang plai-typed
 
-(require "python-core-syntax.rkt")
+(require "core-syntax.rkt")
 
 #|
 

@@ -1,6 +1,6 @@
 #lang plai-typed
 
-(require "python-core-syntax.rkt")
+(require "core-syntax.rkt")
 
 #|
 
@@ -68,7 +68,7 @@ ___fail
                   [(cons? libs)
                    (type-case LibBinding (first libs)
                      (bind (name value)
-                           (CLet name value
+                           (CLet name 'global value
                                  (python-lib/recur (rest libs)))))]))]
     (python-lib/recur lib-functions)))
 

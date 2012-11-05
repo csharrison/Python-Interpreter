@@ -5,8 +5,8 @@
          racket/pretty
          "parse-python.rkt"
          "get-structured-python.rkt"
-         "python-interp.rkt"
-         "python-desugar.rkt"
+         "interp.rkt"
+         "desugar.rkt"
          "python-lib.rkt"
          "run-tests.rkt"
          "python-evaluator.rkt")
