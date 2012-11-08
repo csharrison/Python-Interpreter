@@ -22,6 +22,15 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structure expr)]
 
+    [(hash-table ('nodetype "ClassDef")
+                 ('name name)
+                 ('bases bases)
+                 ('starargs starargs)
+                 ('kwargs kwargs)
+                 ('body body)
+                 ('decorator_list decorator_list))
+     (PyPass)]
+     
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
                  ('kwargs kwargs)     ;; ignoring kwargs for now
