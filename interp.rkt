@@ -197,7 +197,7 @@
                                               [some (v) (ValA v s2)]
                                               [none () (err s2 "object lookup failed: " s)])]
                                    [else (err s2 (pretty o) " is not an object, failed at lookup")])]
-                       [else (err s2 "cannot lookup with a non string")]))]
+                       [else (begin (display f) (err s2 "cannot lookup with a non string"))]))]
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos

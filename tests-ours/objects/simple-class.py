@@ -6,3 +6,5 @@ class charlie(object):
 
 
 a = charlie()
+
+a.__init__()

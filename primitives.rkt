@@ -23,7 +23,7 @@ primitives here.
     [VNone () "None"]
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs body) "(closure ...)"]
-    [VObject (type base fields) "object"]
+    [VObject (type base fields) (string-append "Object: "(symbol->string type))]
     [VReturn (val) (pretty val)]))
 
 (define (print arg)

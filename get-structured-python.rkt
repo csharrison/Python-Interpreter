@@ -33,6 +33,12 @@ structure that you define in python-syntax.rkt
      (begin 
      ;note: make name and base be PyIds eventually. We can make the classes objects too
      (PyClassDef (string->symbol name) (PyId-x (get-structure (first bases))) (map get-structure body)))] ; DO everything else later
+    [(hash-table ('nodetype "Attribute")
+                 ('value value)
+                 ('attr attr)
+                 ('ctx ctx))
+     (PyGetAttr (get-structure value) (get-structure attr))]
+    ["__init__" (PyStr "__init__")]
      
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now

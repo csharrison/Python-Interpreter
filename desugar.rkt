@@ -162,6 +162,7 @@
                                     (CReturn (CObject name base fields)))]) (get-scope-type name scope)))]
                  
     
+    [PyGetAttr (target attr) (CGet (desug target scope) (desug attr scope))]
     [PyFun (args defaults body) (CFunc args (convert-defaults defaults scope) (desug body scope))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
