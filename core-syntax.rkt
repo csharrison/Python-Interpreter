@@ -49,6 +49,9 @@ containers: dict, (set)
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   [CNotDefined]
+  
+  [CObject (type : symbol) (base : symbol) (fields : (hashof string CExp))]
+  [CGet (obj : CExp) (field : CExp)]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses
@@ -63,11 +66,9 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  
+  [VObject (type : symbol) (base : symbol) (fields : (hashof string CVal))]
   [VNotDefined])
 
-(define-type Val
-  [VObject (type : symbol) (fields : (hashof string Val))])
 
 (define-type Ans
   [ValA (v : CVal) (store : Store)]

@@ -73,7 +73,7 @@
                [else (ValA (VNone) s)])]
        [ExnA (v s) (ExnA v s)])]
     [(and (empty? ids) (cons? vals) (empty? defs))
-     (err sto "Application failed with an arity mismatch")]
+     (err sto "Application failed with an arity mismatch: too many values given")]
     [(and (empty? ids) (cons? vals) (cons? defs)) ; use val instead of def
      (interp-as caller-env sto ([(v s) (first vals)])
                 (local ((define-values (newenv newsto) (update-env-store (VD-id (first defs)) v clo-env s 'local)));;update the local environment
@@ -86,7 +86,7 @@
                 (local ((define-values  (newenv newsto) (update-env-store (first ids) v clo-env s 'local)))
                   (Apply (rest ids) (rest vals) defs caller-env newsto newenv clo-body)))]
     
-    [else (err sto "Application failed with arity mismatch")]))
+    [else (err sto "Application failed with arity mismatch: not enough values given to function")]))
 
 ;; RANDOM ASS COMMENT LINE!
 
@@ -101,6 +101,7 @@
     [VNone () (VFalse)]
     [VClosure (e args defs b) (VTrue)]
     [VNotDefined () (VFalse)]
+    [VObject (type base fields) (VTrue)]
     [VReturn (val) (BoolEval val)]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
@@ -178,6 +179,25 @@
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
     
+    [CObject (type base fields)
+             (local ((define (iter cvals vals sto)
+                       (cond [(empty? cvals) (ValA (VObject type base (hash vals)) sto)]
+                             [(cons? cvals)
+                              (local ((define-values (k c) (first cvals)))
+                                (interp-as env sto ([(v s) c])
+                                           (iter (rest cvals) (cons (values k v) vals) s)))])))
+               (iter (map (lambda (k) (values k (some-v (hash-ref fields k)))) (hash-keys fields))
+                     empty store))]
+    [CGet (obj field)
+          (interp-as env store ([(o s) obj] [(f s2) field])
+                     (type-case CVal f
+                       [VStr (s) (type-case CVal o
+                                   [VObject (type base fields)
+                                            (type-case (optionof CVal) (hash-ref fields s)
+                                              [some (v) (ValA v s2)]
+                                              [none () (err s2 "object lookup failed: " s)])]
+                                   [else (err s2 (pretty o) " is not an object, failed at lookup")])]
+                       [else (err s2 "cannot lookup with a non string")]))]
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos

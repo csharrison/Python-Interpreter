@@ -67,6 +67,7 @@
                                 [else (begin (error 'desugar "no assign case for non ids") scope)])]
                              [else (begin (error 'desugar "no assign for iterables") scope)])]
              [PyFunDef (name args defaults body) (modify-scope name scope (if global? 'global 'local))]
+             [PyClassDef (name base body) (modify-scope name scope (if global? 'global 'local))]
              [else scope])))
     (get-scope expr (hash empty))))
 
@@ -132,18 +133,33 @@
     [PyReturn (val) (CReturn (desug val scope))]
     
     [PyClassDef (name base body)
-                (local ((define (get-fields (fs :(listof PyExpr))) : (listof (symbol * CExp))
-                          (type-case PyExpr (first fs)
-                            [PyFunDef (name args defaults body) (cons (values name (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
-                            [PyAssign (targets value) 
-                                      (cond [(empty? (rest targets))
-                                             (type-case PyExpr (first targets)
-                                               [PyId (id) (cons (values id (desug value scope)) (get-fields (rest fs)))]
-                                               [else (get-fields (rest fs))])]
-                                            [else (get-fields (rest fs))])]
-                            [else (get-fields (rest fs))]))
-                        (define fields (get-fields body)))
-                  (CNone))]
+                (local ((define (get-fields (fs :(listof PyExpr))) : (listof (string * CExp))
+                          (if (empty? fs) empty
+                              (type-case PyExpr (first fs)
+                                [PyFunDef (name args defaults body) (cons (values (symbol->string name) (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
+                                [PyAssign (targets value) 
+                                          (cond [(empty? (rest targets))
+                                                 (type-case PyExpr (first targets)
+                                                   [PyId (id) (cons (values (symbol->string id) (desug value scope)) (get-fields (rest fs)))]
+                                                   [else (get-fields (rest fs))])]
+                                                [else (get-fields (rest fs))])]
+                                [else (get-fields (rest fs))])))
+                        (define fields (hash (get-fields body))))
+                  
+                  (CSet! name 
+                         (type-case (optionof CExp) (hash-ref fields "__init__")
+                           [some (v) (type-case CExp v
+                                       [CFunc (args defaults body)
+                                              ;;give it (rest args) to get rid of the self
+                                              (CFunc (rest args) defaults 
+                                                     (let ((theobj (make-id)))
+                                                       (CLet theobj 'local (CObject name base fields)
+                                                             (CSeq
+                                                              (CApp (CGet (CId theobj) (CStr "__init__")) (cons (CId theobj) (map CId (rest args))))
+                                                              (CReturn (CId theobj))))))]
+                                       [else (Err "__init__ must be a function!")])]
+                           [none () (CFunc empty empty
+                                    (CReturn (CObject name base fields)))]) (get-scope-type name scope)))]
                  
     
     [PyFun (args defaults body) (CFunc args (convert-defaults defaults scope) (desug body scope))]
