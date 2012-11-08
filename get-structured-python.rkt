@@ -22,6 +22,18 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structure expr)]
 
+    [(hash-table ('nodetype "ClassDef")
+                 ('name name)
+                 ('bases bases)
+                 ('starargs starargs)
+                 ('keywords keywords)
+                 ('kwargs kwargs)
+                 ('body body)
+                 ('decorator_list decorator_list))
+     (begin 
+     ;note: make name and base be PyIds eventually. We can make the classes objects too
+     (PyClassDef (string->symbol name) (PyId-x (get-structure (first bases))) (map get-structure body)))] ; DO everything else later
+     
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
                  ('kwargs kwargs)     ;; ignoring kwargs for now
@@ -34,6 +46,12 @@ structure that you define in python-syntax.rkt
                  ('targets targets)
                  ('value value))
      (PyAssign (map get-structure targets) (get-structure value))]
+    [(hash-table ('nodetype "Global")
+                 ('names names))
+     (PySeq (map (lambda (x) (PyGlobal (string->symbol x))) names))]
+    [(hash-table ('nodetype "Nonlocal")
+                 ('names names))
+     (PySeq (map (lambda (x) (PyNonLocal (string->symbol x))) names))]
     [(hash-table ('nodetype "Name")
                  ('ctx _)        ;; ignoring ctx for now
                  ('id id))

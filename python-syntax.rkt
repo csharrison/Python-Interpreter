@@ -21,9 +21,12 @@
   [PyList (elts : (listof PyExpr))]
   
   [PyId (x : symbol)]
+  [PyGlobal (x : symbol)]
+  [PyNonLocal (x : symbol)]
   
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
   
+  [PyClassDef (name : symbol) (base : symbol) (body : (listof PyExpr))]
   [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (listof PyDefault)) (body : PyExpr)]
   [PyFun (args : (listof symbol)) (defaults : (listof PyDefault))  (body : PyExpr)]
   

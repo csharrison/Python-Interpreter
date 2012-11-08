@@ -1,6 +1,6 @@
 #lang plai-typed
 
-(require "python-core-syntax.rkt")
+(require "core-syntax.rkt")
 
 #|
 
@@ -21,8 +21,9 @@ primitives here.
     [VTrue () "true"]
     [VFalse () "false"]
     [VNone () "None"]
-    [VNotDefined () "Undefined"]
+    [VNotDefined () "Not Defined"]
     [VClosure (env args defs body) "(closure ...)"]
+    [VObject (type base fields) "object"]
     [VReturn (val) (pretty val)]))
 
 (define (print arg)

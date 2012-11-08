@@ -32,9 +32,13 @@ containers: dict, (set)
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CUnary (op : symbol) (expr : CExp)];+,-,~,not
   
-  [CSet! (id : symbol) (val : CExp)]
+  [CSet! (id : symbol) (val : CExp) (type : symbol)]
+  
   [CId (x : symbol)]
-  [CLet (x : symbol) (bind : CExp) (body : CExp)]
+  [CGlobalId (x : symbol)]
+  [CNonLocalId (x : symbol)]
+  
+  [CLet (x : symbol) (type : symbol) (bind : CExp) (body : CExp)]
   
   [CReturn (val : CExp)]
   
@@ -45,6 +49,9 @@ containers: dict, (set)
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   [CNotDefined]
+  
+  [CObject (type : symbol) (base : symbol) (fields : (hashof string CExp))]
+  [CGet (obj : CExp) (field : CExp)]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses
@@ -59,14 +66,19 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  
+  [VObject (type : symbol) (base : symbol) (fields : (hashof string CVal))]
   [VNotDefined])
+
 
 (define-type Ans
   [ValA (v : CVal) (store : Store)]
   [ExnA (v : CVal) (store : Store)])
 
 (define-type-alias Location number)
-(define-type-alias Env (hashof symbol Location))
+
 (define-type-alias Store (hashof Location CVal))
+
+(define-type Env
+  [Ev (locals : (hashof symbol Location)) (nonlocals : (hashof symbol Location))])
+
 

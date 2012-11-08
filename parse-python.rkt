@@ -6,11 +6,11 @@
 (define (get-parsed-json input-port python-path)
   (define stdout (open-output-string "stdout"))
   (define stderr (open-output-string "stderr"))
-  (define proc (process*/ports stdout input-port stderr python-path "python-parser.py"))
+  (define proc (process*/ports stdout input-port stderr python-path "parser.py"))
   ((fifth proc) 'wait) 
   (define err-output (get-output-string stderr))
   (when (not (equal? err-output ""))
-    (error 'parse (format "Couldn't parse python file with python-parser.py.  Error was: \n ~a" err-output)))
+    (error 'parse (format "Couldn't parse python file with parser.py.  Error was: \n ~a" err-output)))
   (define std-output (get-output-string stdout))
   (json->jsexpr std-output))
 
