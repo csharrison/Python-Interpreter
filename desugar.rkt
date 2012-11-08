@@ -96,7 +96,7 @@
 
 ;;ns = nonlocals
 ;;gs = globals
-(define (desug (expr : PyExpr) scope) : CExp
+(define (desug (expr : PyExpr) (scope : (hashof symbol symbol))) : CExp
   (type-case PyExpr expr
     [PySeq (es) (cascade-seq (map (lambda (x) (desug x scope)) es))]
     [PyNum (n) (CNum n)]
@@ -130,6 +130,21 @@
                             (CSet! name (CId thefun) (get-scope-type name scope)))))]
     
     [PyReturn (val) (CReturn (desug val scope))]
+    
+    [PyClassDef (name base body)
+                (local ((define (get-fields (fs :(listof PyExpr))) : (listof (symbol * CExp))
+                          (type-case PyExpr (first fs)
+                            [PyFunDef (name args defaults body) (cons (values name (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
+                            [PyAssign (targets value) 
+                                      (cond [(empty? (rest targets))
+                                             (type-case PyExpr (first targets)
+                                               [PyId (id) (cons (values id (desug value scope)) (get-fields (rest fs)))]
+                                               [else (get-fields (rest fs))])]
+                                            [else (get-fields (rest fs))])]
+                            [else (get-fields (rest fs))]))
+                        (define fields (get-fields body)))
+                  (CNone))]
+                 
     
     [PyFun (args defaults body) (CFunc args (convert-defaults defaults scope) (desug body scope))]
     

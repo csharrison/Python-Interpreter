@@ -66,6 +66,9 @@ containers: dict, (set)
   
   [VNotDefined])
 
+(define-type Val
+  [VObject (type : symbol) (fields : (hashof string Val))])
+
 (define-type Ans
   [ValA (v : CVal) (store : Store)]
   [ExnA (v : CVal) (store : Store)])

@@ -26,10 +26,16 @@ structure that you define in python-syntax.rkt
                  ('name name)
                  ('bases bases)
                  ('starargs starargs)
+                 ('keywords keywords)
                  ('kwargs kwargs)
                  ('body body)
                  ('decorator_list decorator_list))
-     (PyPass)]
+     (begin (display "bases: ") (display bases)
+             (display "\nstarargs: ") (display starargs)
+             (display "\nkeywords: ") (display keywords)
+             (display "\nkwargs :") (display kwargs)
+             (display "\ndecorator_list: ") (display decorator_list)
+     (PyClassDef name (get-structure (first bases)) (map get-structure body)))] ; DO everything else later
      
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
