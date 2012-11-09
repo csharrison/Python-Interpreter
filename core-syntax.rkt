@@ -50,11 +50,15 @@ containers: dict, (set)
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   [CNotDefined]
   
-  [CObject (type : symbol) (base : symbol) (fields : (hashof string CExp))]
+  ;only difference between objects and classes: classes do not take implicit self, type=class
+  [CObject (fields : (hashof symbol CExp))]
   [CGet (obj : CExp) (field : CExp)]
+  [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses
+
+
 
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
@@ -66,7 +70,7 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  [VObject (type : symbol) (base : symbol) (fields : (hashof string CVal))]
+  [VObject (fields : (hashof symbol CVal))];mutable hash
   [VNotDefined])
 
 

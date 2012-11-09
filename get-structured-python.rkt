@@ -37,7 +37,7 @@ structure that you define in python-syntax.rkt
                  ('value value)
                  ('attr attr)
                  ('ctx ctx))
-     (PyGetAttr (get-structure value) (get-structure attr))]
+     (PyGetAttr (get-structure value) (PyStr attr))]
     ["__init__" (PyStr "__init__")]
      
     [(hash-table ('nodetype "Call")

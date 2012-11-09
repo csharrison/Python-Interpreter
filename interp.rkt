@@ -39,6 +39,8 @@
                              ['local (Ev (hash-set locals id count) nonlocals)]
                              ['nonlocal (Ev locals (hash-set nonlocals id count))])
                            (hash-set store count val))])))))
+(define (get-list (h : (hashof 'a 'b))) : (listof ('a * 'b))
+  (map (lambda (k) (values k (some-v (hash-ref h k)))) (hash-keys h)))
 
 ;;go through each of our scopes
 (define (lookup sym env type) : (optionof Location)
@@ -101,7 +103,7 @@
     [VNone () (VFalse)]
     [VClosure (e args defs b) (VTrue)]
     [VNotDefined () (VFalse)]
-    [VObject (type base fields) (VTrue)]
+    [VObject (fields) (VTrue)]
     [VReturn (val) (BoolEval val)]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
@@ -179,25 +181,33 @@
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
     
-    [CObject (type base fields)
-             (local ((define (iter cvals vals sto)
-                       (cond [(empty? cvals) (ValA (VObject type base (hash vals)) sto)]
-                             [(cons? cvals)
-                              (local ((define-values (k c) (first cvals)))
-                                (interp-as env sto ([(v s) c])
-                                           (iter (rest cvals) (cons (values k v) vals) s)))])))
-               (iter (map (lambda (k) (values k (some-v (hash-ref fields k)))) (hash-keys fields))
-                     empty store))]
+    [CObject (fields)
+               (local ((define (iter cvals vals sto)
+                         (cond [(empty? cvals) (ValA (VObject (make-hash vals)) sto)]
+                               [(cons? cvals)
+                                (local ((define-values (k c) (first cvals)))
+                                  (interp-as env sto ([(v s) c])
+                                             (iter (rest cvals) (cons (values k v) vals) s)))])))
+                 (iter (get-list fields) empty store))]
+    
     [CGet (obj field)
           (interp-as env store ([(o s) obj] [(f s2) field])
                      (type-case CVal f
                        [VStr (s) (type-case CVal o
-                                   [VObject (type base fields)
-                                            (type-case (optionof CVal) (hash-ref fields s)
+                                   [VObject (fields)
+                                            (type-case (optionof CVal) (hash-ref fields (string->symbol s))
                                               [some (v) (ValA v s2)]
                                               [none () (err s2 "object lookup failed: " s)])]
                                    [else (err s2 (pretty o) " is not an object, failed at lookup")])]
                        [else (begin (display f) (err s2 "cannot lookup with a non string"))]))]
+    [CSetAttr (obj field val)
+          (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
+                     (type-case CVal o
+                       [VObject (fields)
+                                (type-case CVal f
+                                  [VStr (s) (begin (hash-set! fields (string->symbol s) v) (ValA (VNone) s3))]
+                                  [else (err s3 "cannot reference object with " (pretty f))])]
+                       [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
