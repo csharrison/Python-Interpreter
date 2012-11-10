@@ -191,6 +191,7 @@
                  (iter (get-list fields) empty store))]
     
     [CGet (obj field)
+          (begin 
           (interp-as env store ([(o s) obj] [(f s2) field])
                      (type-case CVal f
                        [VStr (s) (type-case CVal o
@@ -199,7 +200,7 @@
                                               [some (v) (ValA v s2)]
                                               [none () (err s2 "object lookup failed: " s)])]
                                    [else (err s2 (pretty o) " is not an object, failed at lookup")])]
-                       [else (begin (display f) (err s2 "cannot lookup with a non string"))]))]
+                       [else (begin (display f) (err s2 "cannot lookup with a non string"))])))]
     [CSetAttr (obj field val)
           (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
                      (type-case CVal o
@@ -210,10 +211,31 @@
                        [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
+                     (begin ;(display clos) (display " func \n\n\n")
                      (type-case CVal clos
                        [VClosure (clo-env ids defaults body)
                                  (Apply ids args defaults env s clo-env body)]
-                       [else (err s "Not a closure at application: " (pretty clos))]))]
+                       [VObject (fields)
+                                (type-case (optionof CVal) (hash-ref fields '__call__)
+                                  [some (v) (type-case CVal v
+                                              [VClosure (clo-env ids defaults body)
+                                                        (let ((newargs (type-case (optionof CVal) (hash-ref fields '__class__)
+                                                                      [some (st) (type-case CVal st
+                                                                                   [VStr (class) (if (string=? class "class") args (cons fun args))]
+                                                                                   [else (cons fun args)])]
+                                                                      [none () (cons fun args)])))
+                                                          (Apply ids newargs defaults env s clo-env body))]                                                       
+                                              [else (err s "cannot call the object")])]
+                                  [none () (err s "object does not have a __call__ attr")])]
+                       [else (err s "Not a closure at application: " (pretty clos))])))]
+    ;;INVARIANT: fun + arg must be ids
+    [CPartialApply (fun arg)
+                   (interp-as env store ([(clos s) fun] [(a s2) arg])
+                              (type-case CVal clos;;we know that clos and arg is going to be an id, so interping is fine
+                                [VClosure (e ids defaults body)
+                                          (local ((define-values (enew snew) (update-env-store (first ids) a env s 'local)))
+                                            (ValA (VClosure enew (rest ids) defaults body) snew))]
+                                [else (err s2 "partial application of nonfunction")]))]
     
     ;;iterate through default arguments
     [CFunc (args defaults body)
@@ -243,7 +265,7 @@
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          [(== is) (ValA (VBool (equal? l r)) s2)]
+                          [(== is) (begin (ValA (VBool (equal? l r)) s2))]
                           ['!= (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
                                               (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]

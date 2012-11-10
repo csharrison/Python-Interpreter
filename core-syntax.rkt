@@ -43,6 +43,7 @@ containers: dict, (set)
   [CReturn (val : CExp)]
   
   [CApp (fun : CExp) (args : (listof CExp))]
+  [CPartialApply (fun : CExp) (arg : CExp)]
   [CFunc (args : (listof symbol)) (defaults : (listof CDefault)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]

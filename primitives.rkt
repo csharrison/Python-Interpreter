@@ -12,7 +12,7 @@ primitives here.
 
 |#
 
-(require (typed-in racket/base [display : (string -> void)]))
+
 
 (define (pretty arg)
   (type-case CVal arg
@@ -26,11 +26,28 @@ primitives here.
     [VObject (fields) (string-append "Object: " "")]
     [VReturn (val) (pretty val)]))
 
+(define (tagof arg)
+  (type-case CVal arg
+    [VNum (n) "number"]
+    [VStr (s) "string"]
+    [VTrue () "boolean"]
+    [VFalse () "boolean"]
+    [VNone () "None"]
+    [VNotDefined () "Not Defined"]
+    [VClosure (env args defs body) "closure"]
+    [VObject (fields) "object"]
+    [VReturn (val) "return"]))
+(define (get-tag arg)
+  (begin ;(display "fuck-> ")(display (pretty arg)) (display "\n")
+         (VStr (tagof arg))))
+
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))
 
 
 (define (python-prim1 (op : symbol) (arg : CVal)) : CVal
+  (begin 
   (case op
-    [(print) (begin (print arg) arg)]))
+    [(print) (begin (print arg) arg)]
+    [(tag) (get-tag arg)])))
 

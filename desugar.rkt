@@ -10,6 +10,7 @@
     [(Err s) (CError (CStr s))]
     [(Err s ...) (CError (CStr (foldr string-append "" (list s ...))))]))
 
+
 (define make-id
   (let ((count 0))
     (lambda () 
@@ -106,9 +107,14 @@
     [PyTrue () (CTrue)]
     [PyFalse () (CFalse)]
     [PyNone () (CNone)]
-    ;[PyApp (f args) (CApp (CGet (desug f scope) (CStr "__call__") ) (map (lambda (x) (desug x scope)) args))]
     
-    [PyApp (f args) (CApp  (desug f scope) (map (lambda (x) (desug x scope)) args))]
+    [PyApp (f args) 
+           (let ((func (make-id)))
+             (CLet func 'local (desug f scope)
+                   (CIf (Compare '== (CStr "object") (CApp (CId 'tagof) (list (CId func))))
+                        (CApp (CId func) (map (lambda (x) (desug x scope)) args))
+                        ;(CApp (CGet (CId func) (CStr "__call__") ) (cons (CId func) (map (lambda (x) (desug x scope)) args)))
+                        (CApp (CId func) (map (lambda (x) (desug x scope)) args)))))]
     [PyId (x) ((case (get-scope-type x scope) ('local CId) ('nonlocal CNonLocalId) ('global CGlobalId)) x)]
     [PyGlobal (x) (CGlobalId x)]
     [PyNonLocal (x) (CNonLocalId x)]
@@ -153,14 +159,36 @@
                         (define hash-fields (make-hash fields))
                         (define obj (CObject hash-fields)))
                   
-                  (CSeq (CSet! name (CObject (make-hash (append fields
-                                                                       (list (values '__call__
-                                                                                     (CFunc empty empty (CReturn obj)))))))
+                  (CSeq (CSet! name (CObject 
+                                     (make-hash 
+                                      (append fields
+                                              (list (values '__class__ (CStr "class"))
+                                                    (values '__call__
+                                                            (type-case (optionof CExp) (hash-ref hash-fields '__init__)
+                                                              [some (v) (type-case CExp v
+                                                                          [CFunc (args defaults body)
+                                                                                 (let ((theinit (make-id)))
+                                                                                   (CLet 'theobj 'local obj
+                                                                                         (CFunc (rest args) defaults
+                                                                                                (CSeq (CApp v (cons (CId 'theobj) (map CId (rest args))))
+                                                                                                      (CReturn (CId 'theobj))))))]
+                                                                          [else (Err "bad __init__ case")])]
+                                                                                                        
+                                                              [none () (CFunc (list 'self) empty (CReturn (CId 'self)))]))))))
                                (get-scope-type name scope)) (CNone)))]
     ;;DO NOW: add __call__ method to the class ,which instantiates an objcect
                  
     
-    [PyGetAttr (target attr) (CGet (desug target scope) (desug attr scope))]
+    [PyGetAttr (target attr)
+               (let ((t (make-id))
+                     (a (make-id))
+                     (result (make-id)))
+                 (CLet t 'local (desug target scope)
+                       (CLet a 'local (desug attr scope)
+                             (CLet result 'local (CGet (CId t) (CId a))
+                                   (CIf (Compare '== (CApp (CId 'tagof) (list (CId result))) (CStr "closure"))
+                                        (CPartialApply (CId result) (CId t));;give the target as first argument
+                                        (CId result))))))]
     [PyFun (args defaults body) (CFunc args (convert-defaults defaults scope) (desug body scope))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 

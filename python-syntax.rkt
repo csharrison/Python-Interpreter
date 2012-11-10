@@ -37,7 +37,7 @@
   
   [PyIf (cond : PyExpr) (then : PyExpr) (else : PyExpr)]
   [PyPass]
-  [PyBinOp (of : symbol) (left : PyExpr) (right : PyExpr)]
+  [PyBinOp (op : symbol) (left : PyExpr) (right : PyExpr)]
   
   [PyNotImplemented]
   

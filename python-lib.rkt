@@ -26,6 +26,10 @@ ___fail
   (CFunc (list 'to-print) empty
     (CPrim1 'print (CId 'to-print))))
 
+(define tag-of
+  (CFunc (list 'to-tag) empty
+         (CReturn (CPrim1 'tag (CId 'to-tag)))))
+
 (define assert-true-lambda
   (CFunc (list 'check-true) empty
     (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
@@ -54,6 +58,7 @@ ___fail
 
 (define lib-functions
   (list (bind 'print print-lambda)
+        (bind 'tagof tag-of)
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception exception-lambda)
         (bind '___assertEqual assert-equal-lambda)
