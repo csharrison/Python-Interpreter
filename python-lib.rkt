@@ -62,6 +62,7 @@ ___fail
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception exception-lambda)
         (bind '___assertEqual assert-equal-lambda)
+        (bind '___assertIs assert-equal-lambda)
         (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)))

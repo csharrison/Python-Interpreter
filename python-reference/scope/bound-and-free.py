@@ -8,7 +8,4 @@ def f(x):
     return C
 
 inst = f(3)()
-print("GOT PAST THIS")
-print(inst.a)
-print(inst.m)
 ___assertEqual(inst.a, inst.m())
