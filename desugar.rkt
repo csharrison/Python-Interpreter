@@ -109,13 +109,7 @@
     [PyFalse () (CFalse)]
     [PyNone () (CNone)]
     
-    [PyApp (f args) 
-           (let ((func (make-id)))
-             (CLet func 'local (desug f scope)
-                   (CIf (Compare '== (CStr "object") (CApp (CId 'tagof) (list (CId func))))
-                        (CApp (CId func) (map (lambda (x) (desug x scope)) args))
-                        ;(CApp (CGet (CId func) (CStr "__call__") ) (cons (CId func) (map (lambda (x) (desug x scope)) args)))
-                        (CApp (CId func) (map (lambda (x) (desug x scope)) args)))))]
+    [PyApp (f args) (CApp (desug f scope) (map (lambda (x) (desug x scope)) args))]
     [PyId (x) ((case (get-scope-type x scope) ('local CId) ('nonlocal CNonLocalId) ('global CGlobalId)) x)]
     [PyGlobal (x) (CGlobalId x)]
     [PyNonLocal (x) (CNonLocalId x)]
@@ -177,7 +171,6 @@
                                                                                                         
                                                               [none () (CFunc empty empty (CReturn obj))]))))))
                                (get-scope-type name scope)) (CNone)))]
-    ;;DO NOW: add __call__ method to the class ,which instantiates an objcect
                  
     
     [PyGetAttr (target attr)
