@@ -49,6 +49,7 @@
     [none () (hash-set h id type)]))
 ;;js style static code reading for hoisting
 (define (get-assigns (expr : PyExpr) global?) : (hashof symbol symbol)
+  (begin 
   (local ((define (get-scope expr scope) : (hashof symbol symbol)
            (type-case PyExpr expr
              ;;get rid of global and nonlocal identifiers
@@ -71,7 +72,7 @@
              [PyFunDef (name args defaults body) (modify-scope name scope (if global? 'global 'local))]
              [PyClassDef (name base body) (modify-scope name scope (if global? 'global 'local))]
              [else scope])))
-    (get-scope expr (hash empty))))
+    (get-scope expr (hash empty)))))
 
 (define (get-type scope type)
   (filter (lambda (x) (symbol=? type (some-v (hash-ref scope x)))) (hash-keys scope)))

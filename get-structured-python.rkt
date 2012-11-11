@@ -32,7 +32,9 @@ structure that you define in python-syntax.rkt
                  ('decorator_list decorator_list))
      (begin 
      ;note: make name and base be PyIds eventually. We can make the classes objects too
-     (PyClassDef (string->symbol name) (PyId-x (get-structure (first bases))) (map get-structure body)))] ; DO everything else later
+     (PyClassDef (string->symbol name) 
+                 (if (empty? bases) 'object (PyId-x (get-structure (first bases))))
+                 (map get-structure body)))] ; DO everything else later
     [(hash-table ('nodetype "Attribute")
                  ('value value)
                  ('attr attr)
