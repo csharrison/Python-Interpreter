@@ -175,7 +175,7 @@
                                                                                                       (CReturn (CId 'theobj))))))]
                                                                           [else (Err "bad __init__ case")])]
                                                                                                         
-                                                              [none () (CFunc (list 'self) empty (CReturn (CId 'self)))]))))))
+                                                              [none () (CFunc empty empty (CReturn obj))]))))))
                                (get-scope-type name scope)) (CNone)))]
     ;;DO NOW: add __call__ method to the class ,which instantiates an objcect
                  
