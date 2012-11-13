@@ -22,17 +22,9 @@ ___fail
 
 (define-type-alias Lib (CExp -> CExp))
 
-(define print-lambda
-  (CFunc (list 'to-print) empty
-    (CPrim1 'print (CId 'to-print))))
-
-(define tag-of
-  (CFunc (list 'to-tag) empty
-         (CReturn (CPrim1 'tag (CId 'to-tag)))))
-
-(define len 
-  (CFunc (list 'to-len) empty
-         (CReturn (CPrim1 'len (CId 'to-len)))))
+(define (make-prim op)
+  (CFunc (list 'the-arg) empty
+         (CReturn (CPrim1 op (CId 'the-arg)))))
 
 (define assert-true-lambda
   (CFunc (list 'check-true) empty
@@ -79,9 +71,11 @@ ___fail
   [bind (left : symbol) (right : CExp)])
 
 (define lib-functions
-  (list (bind 'print print-lambda)
-        (bind 'tagof tag-of)
-        (bind 'len len)
+  (list (bind 'print (make-prim 'print))
+        (bind 'tagof (make-prim 'tag))
+        (bind 'len (make-prim 'len))
+        (bind 'list (make-prim 'list))
+        (bind 'tuple (make-prim 'tuple))
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)

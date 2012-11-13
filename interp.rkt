@@ -274,7 +274,7 @@
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
                           [(== is) (begin (ValA (VBool (equal? l r)) s2))]
-                          ['!= (ValA (VBool (not (equal? l r))) s2)]
+                          [(!= isnot) (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
                                                     (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
                                                    [(and (VStr? l) (VStr? r))

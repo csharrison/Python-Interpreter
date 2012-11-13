@@ -18,6 +18,7 @@ primitives here.
                    [drop : ((listof 'a)  number -> (listof 'a))]
                    [take : ((listof 'a)  number -> (listof 'a))]
                    [string-length : (string -> number)]
+                   [string-split : (string string -> (listof string))]
                    [range : (number number number -> (listof number))]))
 (define (valid-index c)
   (or (VNone? c) (VNum? c)))
@@ -90,10 +91,18 @@ primitives here.
     [VStr (s) (ValA (VNum (string-length s)) store)]
     [else (ExnA (VStr (string-append (tagof arg) " has no len()")) store)]))
 
+(define (to-list arg mutable store)
+  (type-case CVal arg
+    [VList (m elts) (ValA (VList mutable elts) store)]
+    [VStr (s) (ValA (VList mutable (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s "")))) store)]
+    [else (ExnA (VStr "cannot call list() on non iterable") store)]))
+
 (define (python-prim1 (op : symbol) (arg : CVal) store) : Ans
   (begin 
   (case op
     [(print) (begin (print arg) (ValA arg store))]
     [(tag) (ValA (VStr (tagof arg)) store)]
+    [(list) (to-list arg true store)]
+    [(tuple) (to-list arg false store)]
     [(len) (len arg store)])))
 
