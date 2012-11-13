@@ -30,6 +30,10 @@ ___fail
   (CFunc (list 'to-tag) empty
          (CReturn (CPrim1 'tag (CId 'to-tag)))))
 
+(define len 
+  (CFunc (list 'to-len) empty
+         (CReturn (CPrim1 'len (CId 'to-len)))))
+
 (define assert-true-lambda
   (CFunc (list 'check-true) empty
     (CIf (CId 'check-true) (CTrue) (CError (CStr "Assert failed")))))
@@ -55,6 +59,8 @@ ___fail
                            (values '__exceptiontype__ (CStr s))
                            (values '__errexp__ (CId 'e)))))))
 
+
+
 (define assert-raises-lambda
   (CFunc (list 'exc-type 'func) empty
          (CLet 'fun-call 'local (CApp (CId 'func) empty)
@@ -75,6 +81,7 @@ ___fail
 (define lib-functions
   (list (bind 'print print-lambda)
         (bind 'tagof tag-of)
+        (bind 'len len)
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)

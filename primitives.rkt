@@ -17,6 +17,7 @@ primitives here.
                    [string-join : ((listof string) string -> string)]
                    [drop : ((listof 'a)  number -> (listof 'a))]
                    [take : ((listof 'a)  number -> (listof 'a))]
+                   [string-length : (string -> number)]
                    [range : (number number number -> (listof number))]))
 (define (valid-index c)
   (or (VNone? c) (VNum? c)))
@@ -80,17 +81,19 @@ primitives here.
     [VClosure (env args defs body) "closure"]
     [VObject (fields) "object"]
     [VReturn (val) "return"]))
-(define (get-tag arg)
-  (begin ;(display "fuck-> ")(display (pretty arg)) (display "\n")
-         (VStr (tagof arg))))
-
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))
 
+(define (len arg store)
+  (type-case CVal arg
+    [VList (m elts) (ValA (VNum (length elts)) store)]
+    [VStr (s) (ValA (VNum (string-length s)) store)]
+    [else (ExnA (VStr (string-append (tagof arg) " has no len()")) store)]))
 
-(define (python-prim1 (op : symbol) (arg : CVal)) : CVal
+(define (python-prim1 (op : symbol) (arg : CVal) store) : Ans
   (begin 
   (case op
-    [(print) (begin (print arg) arg)]
-    [(tag) (get-tag arg)])))
+    [(print) (begin (print arg) (ValA arg store))]
+    [(tag) (ValA (VStr (tagof arg)) store)]
+    [(len) (len arg store)])))
 

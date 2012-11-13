@@ -269,7 +269,7 @@
     
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
-                       (ValA (python-prim1 prim v) s))]
+                       (python-prim1 prim v s))]
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
