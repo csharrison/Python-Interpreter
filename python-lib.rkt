@@ -47,9 +47,25 @@ ___fail
          (CIf (Compare '!= (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
 
-(define exception-lambda
+(define (exception-lambda [s : string]) : CExp
   (CFunc (list 'e) empty
-         (CError (CId 'e))))
+      (CObject (make-hash (list 
+                           (values '__type__ (CStr "exception"))
+                           (values '__class__ (CStr "class"))
+                           (values '__exceptiontype__ (CStr s))
+                           (values '__errexp__ (CId 'e)))))))
+
+(define assert-raises-lambda
+  (CFunc (list 'exc-type 'func) empty
+         (CLet 'fun-call 'local (CApp (CId 'func) empty)
+               (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'fun-call))) (CStr "object"))
+                    (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__type__")) (CStr "exception"))
+                         (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__exceptiontype__")) (CId 'exc-type))
+                              (CTrue)
+                              (CError (CStr "Assert failed")))
+                         (CError (CStr "Assert failed")))
+                    (CError (CStr "Assert failed"))))))
+
 (define true-val
   (CTrue))
 
@@ -60,12 +76,17 @@ ___fail
   (list (bind 'print print-lambda)
         (bind 'tagof tag-of)
         (bind 'True true-val); we do this at parse time, which i think is better
-        (bind 'Exception exception-lambda)
+        (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-equal-lambda)
         (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
-        (bind '___assertFalse assert-false-lambda)))
+        (bind '___assertFalse assert-false-lambda)
+        (bind '___assertRaises assert-raises-lambda)
+        (bind 'TypeError (exception-lambda "TypeError"))
+        (bind 'KeyError (exception-lambda "KeyError"))
+        (bind 'RuntimeError (exception-lambda "RuntimeError"))
+        (bind 'IndexError (exception-lambda "IndexError"))))
 
 
 (define (python-lib expr)
