@@ -10,7 +10,7 @@
                    (expt : (number number -> number))))
 (define s+ string-append)
 
-                   
+
 
 ;;err : calls an error with all input strings appended
 (define-syntax err
@@ -39,6 +39,8 @@
                              ['local (Ev (hash-set locals id count) nonlocals)]
                              ['nonlocal (Ev locals (hash-set nonlocals id count))])
                            (hash-set store count val))])))))
+(define (get-list (h : (hashof 'a 'b))) : (listof ('a * 'b))
+  (map (lambda (k) (values k (some-v (hash-ref h k)))) (hash-keys h)))
 
 ;;go through each of our scopes
 (define (lookup sym env type) : (optionof Location)
@@ -102,7 +104,7 @@
     [VNone () (VFalse)]
     [VClosure (e args defs b) (VTrue)]
     [VNotDefined () (VFalse)]
-    [VObject (type base fields) (VTrue)]
+    [VObject (fields) (VTrue)]
     [VReturn (val) (BoolEval val)]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
@@ -113,7 +115,7 @@
     [CFalse () (ValA (VFalse) store)]
     [CNone () (ValA (VNone) store)]
     [CNotDefined () (ValA (VNotDefined) store)]
-
+    
     [CUnary (op expr)
             (interp-as env store ([(v s) expr])
                        (case op
@@ -131,13 +133,12 @@
          (interp-as env store ([(v s) i])
                     (interp-full (if (VTrue? (BoolEval v)) then_block else_block) env s))]
     
-    [CId (x)(type-case (optionof Location) (lookup x env 'local)
-              [some (loc) 
-                    (begin ;(display x)(display (hash-ref store loc)) (display "\n")
-                    (ValA (some-v (hash-ref store loc)) store))]
-              [none () (type-case (optionof CVal) (hash-ref globals x)
-                         [some (v) (ValA v store)]
-                         [none () (err store "identifier not found " (symbol->string x))])])]
+    [CId (x)
+         (type-case (optionof Location) (lookup x env 'local)
+           [some (loc) (ValA (some-v (hash-ref store loc)) store)]
+           [none () (type-case (optionof CVal) (hash-ref globals x)
+                      [some (v) (ValA v store)]
+                      [none () (err store "identifier not found " (symbol->string x))])])]
     [CNonLocalId (x)(type-case (optionof Location) (lookup x env 'nonlocal)
                       [some (loc) (ValA (some-v (hash-ref store loc)) store)]
                       [none () (err store "Unbound identifier: " (symbol->string x))])]
@@ -151,74 +152,107 @@
                       (case type
                         [(local nonlocal)
                          (type-case (optionof Location) (lookup id env type)
-                                 [some (loc) (ValA v (hash-set s loc v))]
-                                 [none () (err s "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
+                           [some (loc) (ValA v (hash-set s loc v))]
+                           [none () (err s "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
                         ['global (begin (set! globals (hash-set globals id v)) (ValA v s))]))]
-                               
+    
     
     [CLet (x type bind body)
           (begin 
             (interp-as env store([(v s) bind])
-                     (case type
-                       ['local (local ((define-values (ne ns) (update-env-store x v env s 'local)))
-                                 (interp-full body ne ns))]
-                       ;;the globals / nonlocals in a function
-                       [else (type-case (optionof Location) (lookup x env type)
-                               [some (loc) (interp-full body env s)];do nothing cause it's already in our store
-                               [none ()  (case type
-                                           ['global (begin (if (and (VNotDefined? v) (some? (hash-ref globals x))) 
-                                                               (void) 
-                                                               (set! globals (hash-set globals x v))) (interp-full body env s))]
-                                           ['nonlocal (err s "no binding for nonlocal '" (symbol->string x) "' found")])])])))]
+                       (case type
+                         ['local (local ((define-values (ne ns) (update-env-store x v env s 'local)))
+                                   (interp-full body ne ns))]
+                         ;;the globals / nonlocals in a function
+                         [else (type-case (optionof Location) (lookup x env type)
+                                 [some (loc) (interp-full body env s)];do nothing cause it's already in our store
+                                 [none ()  (case type
+                                             ['global (begin (if (and (VNotDefined? v) (some? (hash-ref globals x))) 
+                                                                 (void) 
+                                                                 (set! globals (hash-set globals x v))) (interp-full body env s))]
+                                             ['nonlocal (err s "no binding for nonlocal '" (symbol->string x) "' found")])])])))]
     
     [CSeq (ex1 ex2) (interp-as env store ([(v1 s1) ex1])
-                               (begin
-                                      (type-case CVal v1
-                                        [VReturn (val) (ValA v1 s1)]
-                                        [else (interp-full ex2 env s1)])))]
+                               (type-case CVal v1
+                                 [VReturn (val) (ValA v1 s1)]
+                                 [else (interp-full ex2 env s1)]))]
     [CList (mutable elts) (local ((define (iter cvals vals sto)
                                     (cond [(empty? cvals) (ValA (VList mutable (reverse vals)) sto)]
                                           [(cons? cvals) (interp-as env sto ([(v s) (first cvals)])
                                                                     (iter (rest cvals) (cons v vals) s))])))
                             (iter elts empty store))]
+    [CSlice (l low up st)
+            (interp-as env store ([(lst s) l] [(lower s2) low] [(upper s3) up] [(step s4) st])
+                       (slice lst lower upper step s4))]
+    [CIndex (l i) (interp-as env store ([(lst s) l] [(idex s2) i])
+                             (index lst idex s2))]
     
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
     
-    [CObject (type base fields)
+    [CObject (fields)
              (local ((define (iter cvals vals sto)
-                       (cond [(empty? cvals) (ValA (VObject type base (hash vals)) sto)]
-                             [(cons? cvals)
-                              (local ((define-values (k c) (first cvals)))
-                                (interp-as env sto ([(v s) c])
-                                           (iter (rest cvals) (cons (values k v) vals) s)))])))
-               (iter (map (lambda (k) (values k (some-v (hash-ref fields k)))) (hash-keys fields))
-                     empty store))]
+                       (cond [(empty? cvals) (ValA (VObject (make-hash vals)) sto)]
+                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
+                                              (interp-as env sto ([(v s) c]) 
+                                                         (iter (rest cvals) (cons (values k v) vals) s)))])))
+               (iter (get-list fields) empty store))]
+    
     [CGet (obj field)
-          (interp-as env store ([(o s) obj] [(f s2) field])
-                     (type-case CVal f
-                       [VStr (s) (type-case CVal o
-                                   [VObject (type base fields)
-                                            (type-case (optionof CVal) (hash-ref fields s)
-                                              [some (v) (ValA v s2)]
-                                              [none () (err s2 "object lookup failed: " s)])]
-                                   [else (err s2 (pretty o) " is not an object, failed at lookup")])]
-                       [else (begin (display f) (err s2 "cannot lookup with a non string"))]))]
+          (begin 
+            (interp-as env store ([(o s) obj] [(f s2) field])
+                       (type-case CVal f
+                         [VStr (s) (type-case CVal o
+                                     [VObject (fields)
+                                              (type-case (optionof CVal) (hash-ref fields (string->symbol s))
+                                                [some (v) (ValA v s2)]
+                                                [none () (err s2 "object lookup failed: " s)])]
+                                     [else (err s2 (pretty o) " is not an object, failed at lookup")])]
+                         [else (begin (display f) (err s2 "cannot lookup with a non string"))])))]
+    [CSetAttr (obj field val)
+              (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
+                         (type-case CVal o
+                           [VObject (fields)
+                                    (type-case CVal f
+                                      [VStr (s) (begin (hash-set! fields (string->symbol s) v) (ValA (VNone) s3))]
+                                      [else (err s3 "cannot reference object with " (pretty f))])]
+                           [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
-                       [VClosure (clo-env ids defaults body)
-                                 (Apply ids args defaults env s clo-env body)]
-                       [else (err s "Not a closure at application: " (pretty clos))]))]
+                         [VClosure (clo-env ids defaults body)
+                                   (Apply ids args defaults env s clo-env body)]
+                         [VObject (fields)
+                                  (type-case (optionof CVal) (hash-ref fields '__call__)
+                                    [some (v) (type-case CVal v
+                                                [VClosure (clo-env ids defaults body)
+                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields '__class__)
+                                                                           [some (st) (type-case CVal st
+                                                                                        [VStr (class) (if (string=? class "class") args (cons fun args))]
+                                                                                        [else (cons fun args)])]
+                                                                           [none () (cons fun args)])))
+                                                            (Apply ids newargs defaults env s clo-env body))]                                                       
+                                                [else (err s "cannot call the object")])]
+                                    [none () (err s "object does not have a __call__ attr")])]
+                         [else (err s "Not a closure at application: " (pretty clos))]))]
+    ;;INVARIANT: fun + arg must be ids
+    [CPartialApply (fun arg)
+                   (interp-as env store ([(clos s) fun] [(a s2) arg])
+                              (type-case CVal clos;;we know that clos and arg is going to be an id, so interping is fine
+                                [VClosure (clo-env ids defaults body)
+                                          (local ((define-values (enew snew) (update-env-store (first ids) a clo-env s 'local)))
+                                            (ValA (VClosure enew (rest ids) defaults body) snew))]
+                                [else (err s2 "partial application of nonfunction")]))]
     
     ;;iterate through default arguments
     [CFunc (args defaults body)
            (local ((define (iter cdefs vdefs sto)
-                     (cond [(empty? cdefs) (ValA (VClosure (reset-scopes env) args vdefs body) sto)]
+                     (cond [(empty? cdefs)
+                            (ValA (VClosure (reset-scopes env) args vdefs body) sto)]
                            [else (interp-as env sto ([(v s) (CD-expr (first cdefs))])
                                             (iter (rest cdefs) (cons (VD (CD-id (first cdefs)) v) vdefs) s))])))
              (iter defaults empty store))]
-          
+    
     [CBinOp (op left right) 
             (interp-as env store ([(l s) left] [(r s2) right])
                        (cond [(and (VNum? l) (VNum? r))
@@ -232,21 +266,21 @@
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]
                                 [else (err s2 "invalid operation on strings: " (symbol->string op))])]
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
-                                       
+    
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
                        (ValA (python-prim1 prim v) s))]
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          [(== is) (ValA (VBool (equal? l r)) s2)]
+                          [(== is) (begin (ValA (VBool (equal? l r)) s2))]
                           ['!= (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
-                                              (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
-                                             [(and (VStr? l) (VStr? r))
-                                              (VBool ((case op ['< string<?] ['<= string<=?] ['> string>?] ['>= string>=?]) (VStr-s l) (VStr-s r)))])
+                                                    (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
+                                                   [(and (VStr? l) (VStr? r))
+                                                    (VBool ((case op ['< string<?] ['<= string<=?] ['> string>?] ['>= string>=?]) (VStr-s l) (VStr-s r)))])
                                              s2)]
-                                              
+                          
                           [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
 
 

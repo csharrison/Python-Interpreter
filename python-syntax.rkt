@@ -19,6 +19,9 @@
   [PyUnary (op : symbol) (expr : PyExpr)];+,-,~,not
   
   [PyList (elts : (listof PyExpr))]
+  [PyTuple (elts : (listof PyExpr))]
+  [PySlice (lst : PyExpr) (lower : PyExpr) (upper : PyExpr) (step : PyExpr)]
+  [PyIndex (lst : PyExpr) (i : PyExpr)]
   
   [PyId (x : symbol)]
   [PyGlobal (x : symbol)]
@@ -37,7 +40,7 @@
   
   [PyIf (cond : PyExpr) (then : PyExpr) (else : PyExpr)]
   [PyPass]
-  [PyBinOp (of : symbol) (left : PyExpr) (right : PyExpr)]
+  [PyBinOp (op : symbol) (left : PyExpr) (right : PyExpr)]
   
   [PyNotImplemented]
   

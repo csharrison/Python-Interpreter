@@ -32,12 +32,14 @@ structure that you define in python-syntax.rkt
                  ('decorator_list decorator_list))
      (begin 
      ;note: make name and base be PyIds eventually. We can make the classes objects too
-     (PyClassDef (string->symbol name) (PyId-x (get-structure (first bases))) (map get-structure body)))] ; DO everything else later
+     (PyClassDef (string->symbol name) 
+                 (if (empty? bases) 'object (PyId-x (get-structure (first bases))))
+                 (map get-structure body)))] ; DO everything else later
     [(hash-table ('nodetype "Attribute")
                  ('value value)
                  ('attr attr)
                  ('ctx ctx))
-     (PyGetAttr (get-structure value) (get-structure attr))]
+     (PyGetAttr (get-structure value) (PyStr attr))]
     ["__init__" (PyStr "__init__")]
      
     [(hash-table ('nodetype "Call")
@@ -109,6 +111,28 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx)
                  ('elts elts))
      (PyList (map get-structure elts))]
+    [(hash-table ('nodetype "Tuple")
+                 ('ctx ctx)
+                 ('elts elts))
+     (PyTuple (map get-structure elts))]
+    [(hash-table ('nodetype "Subscript")
+                 ('value lst)
+                 ('slice slice)
+                 ('ctx ctx))
+     (match slice
+       [(hash-table ('nodetype "Index")
+                    ('value i))
+        (PyIndex (get-structure lst) (get-structure i))]
+       [(hash-table ('nodetype "Slice")
+                    ('upper upper)
+                    ('lower lower)
+                    ('step step))
+        (let ((check (lambda (x) (if (eq? x #\nul) (PyNone)  (get-structure x)))))
+          (PySlice (get-structure lst) (check lower) (check upper) (check step)))]
+       [(hash-table ('nodetype "ExtSlice")
+                    ('dims dims))
+        (error "wtf is an ExtSlice")])]
+
     [(hash-table ('nodetype "Compare")
                  ('left left)
                  ('ops ops)

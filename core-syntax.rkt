@@ -27,6 +27,9 @@ containers: dict, (set)
   [CNone]
   [CSeq (e1 : CExp) (e2 : CExp)]
   [CList (mutable : boolean) (elts : (listof CExp))]
+  [CSlice (lst : CExp) (lower : CExp) (upper : CExp) (step : CExp)]
+  [CIndex (lst : CExp) (i : CExp)]
+  
   [CError (e1 : CExp)]
   
   [CIf (test : CExp) (then : CExp) (else : CExp)]
@@ -43,6 +46,7 @@ containers: dict, (set)
   [CReturn (val : CExp)]
   
   [CApp (fun : CExp) (args : (listof CExp))]
+  [CPartialApply (fun : CExp) (arg : CExp)]
   [CFunc (args : (listof symbol)) (defaults : (listof CDefault)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]
@@ -50,11 +54,15 @@ containers: dict, (set)
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   [CNotDefined]
   
-  [CObject (type : symbol) (base : symbol) (fields : (hashof string CExp))]
+  ;only difference between objects and classes: classes do not take implicit self, type=class
+  [CObject (fields : (hashof symbol CExp))]
   [CGet (obj : CExp) (field : CExp)]
+  [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses
+
+
 
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
@@ -67,7 +75,7 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  [VObject (type : symbol) (base : symbol) (fields : (hashof string CVal))]
+  [VObject (fields : (hashof symbol CVal))];mutable hash
   [VNotDefined])
 
 
