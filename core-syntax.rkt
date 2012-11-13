@@ -26,7 +26,7 @@ containers: dict, (set)
   [CFalse]
   [CNone]
   [CSeq (e1 : CExp) (e2 : CExp)]
-  
+  [CList (mutable : boolean) (elts : (listof CExp))]
   [CError (e1 : CExp)]
   
   [CIf (test : CExp) (then : CExp) (else : CExp)]
@@ -59,6 +59,7 @@ containers: dict, (set)
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
 (define-type CVal
+  [VList (mutable : boolean) (elts : (listof CVal))];tuple = immutable, list = mutable
   [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]

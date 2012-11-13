@@ -95,6 +95,7 @@
 (define (BoolEval (val : CVal)) : CVal
   (type-case CVal val
     [VNum (n) (VBool (not (zero? n)))]
+    [VList (m elts) (VBool (not (empty? elts)))]
     [VStr (s) (VBool (not (string=? "" s)))]
     [VTrue () (VTrue)]
     [VFalse () (VFalse)]
@@ -175,6 +176,11 @@
                                       (type-case CVal v1
                                         [VReturn (val) (ValA v1 s1)]
                                         [else (interp-full ex2 env s1)])))]
+    [CList (mutable elts) (local ((define (iter cvals vals sto)
+                                    (cond [(empty? cvals) (ValA (VList mutable (reverse vals)) sto)]
+                                          [(cons? cvals) (interp-as env sto ([(v s) (first cvals)])
+                                                                    (iter (rest cvals) (cons v vals) s))])))
+                            (iter elts empty store))]
     
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]

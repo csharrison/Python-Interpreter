@@ -108,8 +108,7 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "List")
                  ('ctx ctx)
                  ('elts elts))
-     ;(PyList (map get-structure elts))]
-     (PyNotImplemented)]
+     (PyList (map get-structure elts))]
     [(hash-table ('nodetype "Compare")
                  ('left left)
                  ('ops ops)

@@ -12,12 +12,16 @@ primitives here.
 
 |#
 
-(require (typed-in racket/base [display : (string -> void)]))
+(require (typed-in racket
+                   [display : (string -> void)]
+                   [string-join : ((listof string) string -> string)]))
+                   
 
 (define (pretty arg)
   (type-case CVal arg
     [VNum (n) (to-string n)]
     [VStr (s) s]
+    [VList (mutable elts) (string-join (list "[" (string-join (map pretty elts) ", ") "]") "")]
     [VTrue () "true"]
     [VFalse () "false"]
     [VNone () "None"]

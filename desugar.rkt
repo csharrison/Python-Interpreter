@@ -189,7 +189,9 @@
     
     [PyRaise (ex) (CError (desug ex scope))]
     [PyNotImplemented () (CStr "not implemented")]
-    [else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]))
+    [PyList (elts) (CList true (map (lambda (x) (desug x scope)) elts))]
+    ;[else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]
+    ))
 
 (define (desugar expr)
   (begin ;(display expr)
