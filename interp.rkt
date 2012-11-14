@@ -92,20 +92,13 @@
 
 ;; RANDOM ASS COMMENT LINE!
 
-(define (VBool v)
-  (if v (VTrue) (VFalse)))
-(define (BoolEval (val : CVal)) : CVal
-  (type-case CVal val
-    [VNum (n) (VBool (not (zero? n)))]
-    [VList (m elts) (VBool (not (empty? elts)))]
-    [VStr (s) (VBool (not (string=? "" s)))]
-    [VTrue () (VTrue)]
-    [VFalse () (VFalse)]
-    [VNone () (VFalse)]
-    [VClosure (e args defs b) (VTrue)]
-    [VNotDefined () (VFalse)]
-    [VObject (fields) (VTrue)]
-    [VReturn (val) (BoolEval val)]))
+
+
+(define (iter-hash cvals vals env sto type)
+                       (cond [(empty? cvals) (ValA (type (make-hash vals)) sto)]
+                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
+                                              (interp-as env sto ([(key s) k] [(value s2) c])
+                                                         (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
@@ -190,13 +183,8 @@
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
     
-    [CObject (fields)
-             (local ((define (iter cvals vals sto)
-                       (cond [(empty? cvals) (ValA (VObject (make-hash vals)) sto)]
-                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
-                                              (interp-as env sto ([(key s) k] [(value s2) c])
-                                                         (iter (rest cvals) (cons (values key value) vals) s)))])))
-               (iter (get-list fields) empty store))]
+    [CObject (fields) (iter-hash (get-list fields) empty env store VObject)]
+    [CDict (fields) (iter-hash (get-list fields) empty env store VDict)]
     
     [CGet (obj field)
           (begin 
@@ -272,8 +260,10 @@
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          [(== is) (begin (ValA (VBool (equal? l r)) s2))]
-                          [(!= isnot) (ValA (VBool (not (equal? l r))) s2)]
+                          ['is (ValA (VBool (eq? l r)) s2)]
+                          ['isnot (ValA (VBool (not (eq? l r))) s2)]
+                          [(==) (begin (ValA (VBool (equal? l r)) s2))]
+                          [(!=) (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
                                                     (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
                                                    [(and (VStr? l) (VStr? r))

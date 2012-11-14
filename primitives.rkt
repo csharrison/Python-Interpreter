@@ -43,6 +43,9 @@ primitives here.
                                              (ExnA (VStr "list index out of range") store)
                                              (ValA (nth elts n) store))]
                                [else (ExnA (VStr "indices must be integers!") store)])]
+             [VDict (fields) (type-case (optionof CVal) (hash-ref fields i)
+                               [some (v) (ValA v store)]
+                               [none () (ExnA (VStr (string-append "lookup failed: " (pretty i))) store)])]
              [else (ExnA (VStr "cannot take the index of a non-list") store)])))
 
 (define (slice (lst : CVal) (lower : CVal) (upper : CVal) (step : CVal) (sto : Store))
@@ -56,18 +59,35 @@ primitives here.
         [else (ExnA (VStr "nonlist not subscriptable!") sto)])
       (ExnA (VStr "list indices must be integers!") sto)))
            
+(define (VBool v)
+  (if v (VTrue) (VFalse)))
+(define (BoolEval (val : CVal)) : CVal
+  (type-case CVal val
+    [VNum (n) (VBool (not (zero? n)))]
+    [VList (m elts) (VBool (not (empty? elts)))]
+    [VStr (s) (VBool (not (string=? "" s)))]
+    [VTrue () (VTrue)]
+    [VFalse () (VFalse)]
+    [VNone () (VFalse)]
+    [VClosure (e args defs b) (VTrue)]
+    [VNotDefined () (VFalse)]
+    [VObject (fields) (VTrue)]
+    [VDict (fields) (VBool (not (empty? (hash-keys fields))))]
+    [VReturn (val) (BoolEval val)]))
 
 (define (pretty arg)
   (type-case CVal arg
     [VNum (n) (to-string n)]
     [VStr (s) s]
     [VList (mutable elts) (string-join (list (if mutable "[" "(") (string-join (map pretty elts) ", ") (if mutable "]" ")")) "")]
-    [VTrue () "true"]
-    [VFalse () "false"]
+    [VTrue () "True"]
+    [VFalse () "False"]
     [VNone () "None"]
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs body) "(closure ...)"]
     [VObject (fields) (string-append "Object: " "")]
+    [VDict (fields) (string-join  (list "{" (string-join (map (lambda (k)
+                                                                (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
     [VReturn (val) (pretty val)]))
 
 (define (tagof arg)
@@ -81,6 +101,7 @@ primitives here.
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs body) "closure"]
     [VObject (fields) "object"]
+    [VDict (fields) "dict"]
     [VReturn (val) "return"]))
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))
@@ -89,12 +110,14 @@ primitives here.
   (type-case CVal arg
     [VList (m elts) (ValA (VNum (length elts)) store)]
     [VStr (s) (ValA (VNum (string-length s)) store)]
+    [VDict (fields) (ValA (VNum (length (hash-keys fields))) store)]
     [else (ExnA (VStr (string-append (tagof arg) " has no len()")) store)]))
 
 (define (to-list arg mutable store)
   (type-case CVal arg
     [VList (m elts) (ValA (VList mutable elts) store)]
     [VStr (s) (ValA (VList mutable (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s "")))) store)]
+    [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [else (ExnA (VStr "cannot call list() on non iterable") store)]))
 
 (define (python-prim1 (op : symbol) (arg : CVal) store) : Ans
@@ -103,6 +126,8 @@ primitives here.
     [(print) (begin (print arg) (ValA arg store))]
     [(tag) (ValA (VStr (tagof arg)) store)]
     [(list) (to-list arg true store)]
+    [(bool) (ValA (BoolEval arg) store)]
     [(tuple) (to-list arg false store)]
+    [(str) (ValA (VStr (pretty arg)) store)]
     [(len) (len arg store)])))
 

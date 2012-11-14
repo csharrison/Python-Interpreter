@@ -121,6 +121,7 @@
     [PyGlobal (x) (CGlobalId x)]
     [PyNonLocal (x) (CNonLocalId x)]
     
+    ;;these assigns need work
     [PyAssign (targets value)
               (cond [(empty? (rest targets))
                      (type-case PyExpr (first targets)
@@ -129,6 +130,16 @@
                        [else (Err "no assign case yet for ")])]
                     [(cons? (rest targets))
                      (Err "no assign for iterables")])]
+    [PyAugAssign (target op value)
+                 (type-case PyExpr target
+                   [PyId (id) (CSet! id (CBinOp op (CId id) (desug value scope)) (get-scope-type id scope))]
+                   [PyGetAttr (target field)
+                              (let ((t (make-id))
+                                    (f (make-id)))
+                                (CLet t 'local (desug target scope)
+                                      (CLet f 'local (desug field scope)
+                                            (CSetAttr (CId t) (CId f) (CBinOp op (desug value scope) (CGet (CId t) (CId f)))))))]
+                   [else (Err "no assign case yet for ")])]
     
     [PyPass () (CNone)]
     
@@ -220,10 +231,11 @@
     [PyTuple (elts) (CList false (map (lambda (x) (desug x scope)) elts))]
     [PySlice (lst lower upper step) (CSlice (desug lst scope) (desug lower scope) (desug upper scope) (desug step scope))]
     [PyIndex (lst i) (CIndex (desug lst scope) (desug i scope))]
-    [PyDict (keys vals) (CObject (make-hash (append (map2 (lambda (x y) (values x y))
+    [PyDict (keys vals) (CDict (make-hash (map2 (lambda (x y) (values x y))
                                                           (map (lambda (x) (desug x scope)) keys)
-                                                          (map (lambda (x) (desug x scope)) vals))
-                                                    (list (values (CStr "__class__ ") (CStr "dict"))))))]
+                                                          (map (lambda (x) (desug x scope)) vals))))]
+    
+                                                    
                                                           
     ;[else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]
     ))

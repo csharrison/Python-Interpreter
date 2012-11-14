@@ -13,6 +13,8 @@
   [PyOr (es : (listof PyExpr))]
   [PyAnd (es : (listof PyExpr))]
   
+  [PyAugAssign (target : PyExpr) (op : symbol) (value : PyExpr)]
+  
   [PyCompare (left : PyExpr) (ops : (listof symbol)) (right : (listof PyExpr))]
   
   

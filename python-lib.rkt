@@ -42,6 +42,10 @@ ___fail
   (CFunc (list 'first-elt 'second-elt) empty
          (CIf (Compare '!= (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
+(define assert-is
+  (CFunc (list 'first-elt 'second-elt) empty
+         (CIf (Compare 'is (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
 
 (define (exception-lambda [s : string]) : CExp
   (CFunc (list 'e) empty
@@ -76,10 +80,12 @@ ___fail
         (bind 'len (make-prim 'len))
         (bind 'list (make-prim 'list))
         (bind 'tuple (make-prim 'tuple))
+        (bind 'str (make-prim 'str))
+        (bind 'bool (make-prim 'bool))
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)
-        (bind '___assertIs assert-equal-lambda)
+        (bind '___assertIs assert-is)
         (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

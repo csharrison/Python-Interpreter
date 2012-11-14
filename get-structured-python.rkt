@@ -153,7 +153,14 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Is")) 'is]
     [(hash-table ('nodetype "IsNot")) 'isnot]  
     [(hash-table ('nodetype "In")) 'in]
-    [(hash-table ('nodetype "NotIn")) 'notin]  
+    [(hash-table ('nodetype "NotIn")) 'notin]
+    
+    [(hash-table ('nodetype "AugAssign")
+                 ('target target)
+                 ('value value)
+                 ('op op))
+     (PyAugAssign (get-structure target) (get-structure op) (get-structure value))]
+               
     
     [(hash-table ('nodetype "If")
                  ('test test)
