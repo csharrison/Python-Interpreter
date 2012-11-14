@@ -55,7 +55,7 @@ containers: dict, (set)
   [CNotDefined]
   
   ;only difference between objects and classes: classes do not take implicit self, type=class
-  [CObject (fields : (hashof symbol CExp))]
+  [CObject (fields : (hashof CExp CExp))]
   [CGet (obj : CExp) (field : CExp)]
   [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
   )
@@ -75,7 +75,7 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  [VObject (fields : (hashof symbol CVal))];mutable hash
+  [VObject (fields : (hashof CVal CVal))];mutable hash
   [VNotDefined])
 
 

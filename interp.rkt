@@ -194,27 +194,26 @@
              (local ((define (iter cvals vals sto)
                        (cond [(empty? cvals) (ValA (VObject (make-hash vals)) sto)]
                              [(cons? cvals) (local ((define-values (k c) (first cvals)))
-                                              (interp-as env sto ([(v s) c]) 
-                                                         (iter (rest cvals) (cons (values k v) vals) s)))])))
+                                              (interp-as env sto ([(key s) k] [(value s2) c])
+                                                         (iter (rest cvals) (cons (values key value) vals) s)))])))
                (iter (get-list fields) empty store))]
     
     [CGet (obj field)
           (begin 
             (interp-as env store ([(o s) obj] [(f s2) field])
-                       (type-case CVal f
-                         [VStr (s) (type-case CVal o
-                                     [VObject (fields)
-                                              (type-case (optionof CVal) (hash-ref fields (string->symbol s))
-                                                [some (v) (ValA v s2)]
-                                                [none () (err s2 "object lookup failed: " s)])]
-                                     [else (err s2 (pretty o) " is not an object, failed at lookup")])]
-                         [else (begin (display f) (err s2 "cannot lookup with a non string"))])))]
+                       (type-case CVal o
+                         [VObject (fields)
+                                  (type-case (optionof CVal) (hash-ref fields f)
+                                    [some (v) (ValA v s2)]
+                                    [none () (err s2 "object lookup failed: " (pretty f))])]
+                         [else (err s2 (pretty o) " is not an object, failed at lookup")])))]
+                         
     [CSetAttr (obj field val)
               (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
                          (type-case CVal o
                            [VObject (fields)
                                     (type-case CVal f
-                                      [VStr (s) (begin (hash-set! fields (string->symbol s) v) (ValA (VNone) s3))]
+                                      [VStr (s) (begin (hash-set! fields f v) (ValA (VNone) s3))]
                                       [else (err s3 "cannot reference object with " (pretty f))])]
                            [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args)
@@ -223,10 +222,10 @@
                          [VClosure (clo-env ids defaults body)
                                    (Apply ids args defaults env s clo-env body)]
                          [VObject (fields)
-                                  (type-case (optionof CVal) (hash-ref fields '__call__)
+                                  (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
                                     [some (v) (type-case CVal v
                                                 [VClosure (clo-env ids defaults body)
-                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields '__class__)
+                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
                                                                            [some (st) (type-case CVal st
                                                                                         [VStr (class) (if (string=? class "class") args (cons fun args))]
                                                                                         [else (cons fun args)])]

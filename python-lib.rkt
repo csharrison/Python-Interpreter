@@ -46,10 +46,10 @@ ___fail
 (define (exception-lambda [s : string]) : CExp
   (CFunc (list 'e) empty
       (CObject (make-hash (list 
-                           (values '__type__ (CStr "exception"))
-                           (values '__class__ (CStr "class"))
-                           (values '__exceptiontype__ (CStr s))
-                           (values '__errexp__ (CId 'e)))))))
+                           (values (CStr "__type__") (CStr "exception"))
+                           (values (CStr "__class__") (CStr "class"))
+                           (values (CStr "__exceptiontype__") (CStr s))
+                           (values (CStr "__errexp__") (CId 'e)))))))
 
 
 
