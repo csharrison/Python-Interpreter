@@ -13,17 +13,23 @@
   [PyOr (es : (listof PyExpr))]
   [PyAnd (es : (listof PyExpr))]
   
+  [PyAugAssign (target : PyExpr) (op : symbol) (value : PyExpr)]
+  
   [PyCompare (left : PyExpr) (ops : (listof symbol)) (right : (listof PyExpr))]
   
   
   [PyUnary (op : symbol) (expr : PyExpr)];+,-,~,not
   
   [PyList (elts : (listof PyExpr))]
+  [PyTuple (elts : (listof PyExpr))]
+  [PySlice (lst : PyExpr) (lower : PyExpr) (upper : PyExpr) (step : PyExpr)]
+  [PyIndex (lst : PyExpr) (i : PyExpr)]
   
   [PyId (x : symbol)]
   [PyGlobal (x : symbol)]
   [PyNonLocal (x : symbol)]
   
+  [PyDict (keys : (listof PyExpr)) (vals : (listof PyExpr))]
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
   
   [PyClassDef (name : symbol) (base : symbol) (body : (listof PyExpr))]

@@ -92,19 +92,13 @@
 
 ;; RANDOM ASS COMMENT LINE!
 
-(define (VBool v)
-  (if v (VTrue) (VFalse)))
-(define (BoolEval (val : CVal)) : CVal
-  (type-case CVal val
-    [VNum (n) (VBool (not (zero? n)))]
-    [VStr (s) (VBool (not (string=? "" s)))]
-    [VTrue () (VTrue)]
-    [VFalse () (VFalse)]
-    [VNone () (VFalse)]
-    [VClosure (e args defs b) (VTrue)]
-    [VNotDefined () (VFalse)]
-    [VObject (fields) (VTrue)]
-    [VReturn (val) (BoolEval val)]))
+
+
+(define (iter-hash cvals vals env sto type)
+                       (cond [(empty? cvals) (ValA (type (make-hash vals)) sto)]
+                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
+                                              (interp-as env sto ([(key s) k] [(value s2) c])
+                                                         (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
@@ -175,35 +169,39 @@
                                (type-case CVal v1
                                  [VReturn (val) (ValA v1 s1)]
                                  [else (interp-full ex2 env s1)]))]
+    [CList (mutable elts) (local ((define (iter cvals vals sto)
+                                    (cond [(empty? cvals) (ValA (VList mutable (reverse vals)) sto)]
+                                          [(cons? cvals) (interp-as env sto ([(v s) (first cvals)])
+                                                                    (iter (rest cvals) (cons v vals) s))])))
+                            (iter elts empty store))]
+    [CSlice (l low up st)
+            (interp-as env store ([(lst s) l] [(lower s2) low] [(upper s3) up] [(step s4) st])
+                       (slice lst lower upper step s4))]
+    [CIndex (l i) (interp-as env store ([(lst s) l] [(idex s2) i])
+                             (index lst idex s2))]
     
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
     
-    [CObject (fields)
-             (local ((define (iter cvals vals sto)
-                       (cond [(empty? cvals) (ValA (VObject (make-hash vals)) sto)]
-                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
-                                              (interp-as env sto ([(v s) c]) 
-                                                         (iter (rest cvals) (cons (values k v) vals) s)))])))
-               (iter (get-list fields) empty store))]
+    [CObject (fields) (iter-hash (get-list fields) empty env store VObject)]
+    [CDict (fields) (iter-hash (get-list fields) empty env store VDict)]
     
     [CGet (obj field)
           (begin 
             (interp-as env store ([(o s) obj] [(f s2) field])
-                       (type-case CVal f
-                         [VStr (s) (type-case CVal o
-                                     [VObject (fields)
-                                              (type-case (optionof CVal) (hash-ref fields (string->symbol s))
-                                                [some (v) (ValA v s2)]
-                                                [none () (err s2 "object lookup failed: " s)])]
-                                     [else (err s2 (pretty o) " is not an object, failed at lookup")])]
-                         [else (begin (display f) (err s2 "cannot lookup with a non string"))])))]
+                       (type-case CVal o
+                         [VObject (fields)
+                                  (type-case (optionof CVal) (hash-ref fields f)
+                                    [some (v) (ValA v s2)]
+                                    [none () (err s2 "object lookup failed: " (pretty f))])]
+                         [else (err s2 (pretty o) " is not an object, failed at lookup")])))]
+                         
     [CSetAttr (obj field val)
               (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
                          (type-case CVal o
                            [VObject (fields)
                                     (type-case CVal f
-                                      [VStr (s) (begin (hash-set! fields (string->symbol s) v) (ValA (VNone) s3))]
+                                      [VStr (s) (begin (hash-set! fields f v) (ValA (VNone) s3))]
                                       [else (err s3 "cannot reference object with " (pretty f))])]
                            [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args)
@@ -212,10 +210,10 @@
                          [VClosure (clo-env ids defaults body)
                                    (Apply ids args defaults env s clo-env body)]
                          [VObject (fields)
-                                  (type-case (optionof CVal) (hash-ref fields '__call__)
+                                  (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
                                     [some (v) (type-case CVal v
                                                 [VClosure (clo-env ids defaults body)
-                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields '__class__)
+                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
                                                                            [some (st) (type-case CVal st
                                                                                         [VStr (class) (if (string=? class "class") args (cons fun args))]
                                                                                         [else (cons fun args)])]
@@ -258,12 +256,14 @@
     
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
-                       (ValA (python-prim1 prim v) s))]
+                       (python-prim1 prim v s))]
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          [(== is) (begin (ValA (VBool (equal? l r)) s2))]
-                          ['!= (ValA (VBool (not (equal? l r))) s2)]
+                          ['is (ValA (VBool (eq? l r)) s2)]
+                          ['isnot (ValA (VBool (not (eq? l r))) s2)]
+                          [(==) (begin (ValA (VBool (equal? l r)) s2))]
+                          [(!=) (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
                                                     (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]
                                                    [(and (VStr? l) (VStr? r))

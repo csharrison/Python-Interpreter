@@ -3,13 +3,20 @@
 (require "python-syntax.rkt"
          "core-syntax.rkt")
 (require (typed-in racket 
-                   (flatten : ((listof (listof 'a)) -> (listof 'a)))))
+                   (flatten : ((listof (listof 'a)) -> (listof 'a)))
+                   ))
 ;;err : calls an error with all input strings appended
+(define (map2 (f :  ('a 'a -> 'b)) (l1 : (listof 'a)) (l2 :(listof 'a))) : (listof 'b)
+  (cond [(empty? l1) empty]
+        [(cons? l1) (cons (f (first l1) (first l2)) (map2 f (rest l1) (rest l2)))]))
+
 (define-syntax Err
   (syntax-rules ()
     [(Err s) (CError (CStr s))]
     [(Err s ...) (CError (CStr (foldr string-append "" (list s ...))))]))
 
+(define (str (sym : symbol)) : CExp
+  (CStr (symbol->string sym)))
 
 (define make-id
   (let ((count 0))
@@ -114,6 +121,7 @@
     [PyGlobal (x) (CGlobalId x)]
     [PyNonLocal (x) (CNonLocalId x)]
     
+    ;;these assigns need work
     [PyAssign (targets value)
               (cond [(empty? (rest targets))
                      (type-case PyExpr (first targets)
@@ -122,6 +130,16 @@
                        [else (Err "no assign case yet for ")])]
                     [(cons? (rest targets))
                      (Err "no assign for iterables")])]
+    [PyAugAssign (target op value)
+                 (type-case PyExpr target
+                   [PyId (id) (CSet! id (CBinOp op (CId id) (desug value scope)) (get-scope-type id scope))]
+                   [PyGetAttr (target field)
+                              (let ((t (make-id))
+                                    (f (make-id)))
+                                (CLet t 'local (desug target scope)
+                                      (CLet f 'local (desug field scope)
+                                            (CSetAttr (CId t) (CId f) (CBinOp op (desug value scope) (CGet (CId t) (CId f)))))))]
+                   [else (Err "no assign case yet for ")])]
     
     [PyPass () (CNone)]
     
@@ -139,14 +157,14 @@
     [PyReturn (val) (CReturn (desug val scope))]
     
     [PyClassDef (name base body)
-                (local ((define (get-fields (fs :(listof PyExpr))) : (listof (symbol * CExp))
+                (local ((define (get-fields (fs :(listof PyExpr))) : (listof (CExp * CExp))
                           (if (empty? fs) empty
                               (type-case PyExpr (first fs)
-                                [PyFunDef (name args defaults body) (cons (values name (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
+                                [PyFunDef (name args defaults body) (cons (values (str name) (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
                                 [PyAssign (targets value) 
                                           (cond [(empty? (rest targets))
                                                  (type-case PyExpr (first targets)
-                                                   [PyId (id) (cons (values id (desug value scope)) (get-fields (rest fs)))]
+                                                   [PyId (id) (cons (values (str id) (desug value scope)) (get-fields (rest fs)))]
                                                    [else (get-fields (rest fs))])]
                                                 [else (get-fields (rest fs))])]
                                 [else (get-fields (rest fs))])))
@@ -157,9 +175,9 @@
                   (CSeq (CSet! name (CObject 
                                      (make-hash 
                                       (append fields
-                                              (list (values '__class__ (CStr "class"))
-                                                    (values '__call__
-                                                            (type-case (optionof CExp) (hash-ref hash-fields '__init__)
+                                              (list (values (CStr "__class__") (CStr "class"))
+                                                    (values (CStr "__call__")
+                                                            (type-case (optionof CExp) (hash-ref hash-fields (CStr "__init__"))
                                                               [some (v) (type-case CExp v
                                                                           [CFunc (args defaults body)
                                                                                  (let ((theinit (make-id)))
@@ -209,7 +227,18 @@
     
     [PyRaise (ex) (CError (desug ex scope))]
     [PyNotImplemented () (CStr "not implemented")]
-    [else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]))
+    [PyList (elts) (CList true (map (lambda (x) (desug x scope)) elts))]
+    [PyTuple (elts) (CList false (map (lambda (x) (desug x scope)) elts))]
+    [PySlice (lst lower upper step) (CSlice (desug lst scope) (desug lower scope) (desug upper scope) (desug step scope))]
+    [PyIndex (lst i) (CIndex (desug lst scope) (desug i scope))]
+    [PyDict (keys vals) (CDict (make-hash (map2 (lambda (x y) (values x y))
+                                                          (map (lambda (x) (desug x scope)) keys)
+                                                          (map (lambda (x) (desug x scope)) vals))))]
+    
+                                                    
+                                                          
+    ;[else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]
+    ))
 
 (define (desugar expr)
   (begin ;(display expr)

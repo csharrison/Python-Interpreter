@@ -26,6 +26,9 @@ containers: dict, (set)
   [CFalse]
   [CNone]
   [CSeq (e1 : CExp) (e2 : CExp)]
+  [CList (mutable : boolean) (elts : (listof CExp))]
+  [CSlice (lst : CExp) (lower : CExp) (upper : CExp) (step : CExp)]
+  [CIndex (lst : CExp) (i : CExp)]
   
   [CError (e1 : CExp)]
   
@@ -52,7 +55,8 @@ containers: dict, (set)
   [CNotDefined]
   
   ;only difference between objects and classes: classes do not take implicit self, type=class
-  [CObject (fields : (hashof symbol CExp))]
+  [CObject (fields : (hashof CExp CExp))]
+  [CDict (fields : (hashof CExp CExp))]
   [CGet (obj : CExp) (field : CExp)]
   [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
   )
@@ -64,6 +68,7 @@ containers: dict, (set)
 (define-type VDefault
   [VD (id : symbol) (val : CVal)])
 (define-type CVal
+  [VList (mutable : boolean) (elts : (listof CVal))];tuple = immutable, list = mutable
   [VNum (n : number)]
   [VStr (s : string)]
   [VTrue]
@@ -71,7 +76,8 @@ containers: dict, (set)
   [VNone]
   [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
   [VReturn (val : CVal)]
-  [VObject (fields : (hashof symbol CVal))];mutable hash
+  [VObject (fields : (hashof CVal CVal))];mutable hash (MAKE VOBJECTS HAVE HASHES)
+  [VDict (fields : (hashof CVal CVal))]
   [VNotDefined])
 
 

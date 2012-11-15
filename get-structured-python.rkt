@@ -21,6 +21,10 @@ structure that you define in python-syntax.rkt
      (PySeq (map get-structure expr-list))]
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structure expr)]
+    [(hash-table ('nodetype "Dict")
+                 ('keys keys)
+                 ('values vals))
+     (PyDict (map get-structure keys) (map get-structure vals))]
 
     [(hash-table ('nodetype "ClassDef")
                  ('name name)
@@ -110,8 +114,29 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "List")
                  ('ctx ctx)
                  ('elts elts))
-     ;(PyList (map get-structure elts))]
-     (PyNotImplemented)]
+     (PyList (map get-structure elts))]
+    [(hash-table ('nodetype "Tuple")
+                 ('ctx ctx)
+                 ('elts elts))
+     (PyTuple (map get-structure elts))]
+    [(hash-table ('nodetype "Subscript")
+                 ('value lst)
+                 ('slice slice)
+                 ('ctx ctx))
+     (match slice
+       [(hash-table ('nodetype "Index")
+                    ('value i))
+        (PyIndex (get-structure lst) (get-structure i))]
+       [(hash-table ('nodetype "Slice")
+                    ('upper upper)
+                    ('lower lower)
+                    ('step step))
+        (let ((check (lambda (x) (if (eq? x #\nul) (PyNone)  (get-structure x)))))
+          (PySlice (get-structure lst) (check lower) (check upper) (check step)))]
+       [(hash-table ('nodetype "ExtSlice")
+                    ('dims dims))
+        (error "wtf is an ExtSlice")])]
+
     [(hash-table ('nodetype "Compare")
                  ('left left)
                  ('ops ops)
@@ -128,7 +153,14 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Is")) 'is]
     [(hash-table ('nodetype "IsNot")) 'isnot]  
     [(hash-table ('nodetype "In")) 'in]
-    [(hash-table ('nodetype "NotIn")) 'notin]  
+    [(hash-table ('nodetype "NotIn")) 'notin]
+    
+    [(hash-table ('nodetype "AugAssign")
+                 ('target target)
+                 ('value value)
+                 ('op op))
+     (PyAugAssign (get-structure target) (get-structure op) (get-structure value))]
+               
     
     [(hash-table ('nodetype "If")
                  ('test test)
