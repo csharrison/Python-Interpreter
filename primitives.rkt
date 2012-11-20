@@ -69,7 +69,7 @@ primitives here.
     [VTrue () (VTrue)]
     [VFalse () (VFalse)]
     [VNone () (VFalse)]
-    [VClosure (e args defs b) (VTrue)]
+    [VClosure (e args defs s k b) (VTrue)]
     [VNotDefined () (VFalse)]
     [VObject (fields) (VTrue)]
     [VDict (fields) (VBool (not (empty? (hash-keys fields))))]
@@ -84,7 +84,7 @@ primitives here.
     [VFalse () "False"]
     [VNone () "None"]
     [VNotDefined () "Not Defined"]
-    [VClosure (env args defs body) "(closure ...)"]
+    [VClosure (env args defs s k body) "(closure ...)"]
     [VObject (fields) (string-append "Object: " "")]
     [VDict (fields) (string-join  (list "{" (string-join (map (lambda (k)
                                                                 (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
@@ -99,7 +99,7 @@ primitives here.
     [VFalse () "boolean"]
     [VNone () "None"]
     [VNotDefined () "Not Defined"]
-    [VClosure (env args defs body) "closure"]
+    [VClosure (env args defs s k body) "closure"]
     [VObject (fields) "object"]
     [VDict (fields) "dict"]
     [VReturn (val) "return"]))

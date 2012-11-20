@@ -1,7 +1,9 @@
 #lang plai-typed
-
-(define-type PyDefault
-  [PD (id : symbol) (val : PyExpr)])
+(define Some some)
+(define None none)
+(define Hash hash)
+(define (values2 x y) (values x y))
+(define (values4 x y z p) (values x y z p))
 
 (define-type PyExpr
   [PySeq (es : (listof PyExpr))]
@@ -35,11 +37,11 @@
   [PyClassDef (name : symbol) (base : symbol) (body : (listof PyExpr))]
   [PyGetAttr (target : PyExpr) (attr : PyExpr)]
   
-  [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (listof PyDefault)) (body : PyExpr)]
-  [PyFun (args : (listof symbol)) (defaults : (listof PyDefault))  (body : PyExpr)]
+  [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
+  [PyFun (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
   
   [PyReturn (val : PyExpr)]
-  [PyApp (fun : PyExpr) (args : (listof PyExpr))]
+  [PyApp (fun : PyExpr) (args : (listof PyExpr)) (keys : (hashof symbol PyExpr)) (star : (optionof PyExpr)) (kwarg : (optionof PyExpr))]
   
   [PyIf (cond : PyExpr) (then : PyExpr) (else : PyExpr)]
   [PyPass]

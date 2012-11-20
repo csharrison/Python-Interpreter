@@ -45,9 +45,9 @@ containers: dict, (set)
   
   [CReturn (val : CExp)]
   
-  [CApp (fun : CExp) (args : (listof CExp))]
+  [CApp (fun : CExp) (args : (listof CExp)) (keys : (hashof symbol CExp)) (star : (optionof CExp)) (kwarg : (optionof CExp))]
   [CPartialApply (fun : CExp) (arg : CExp)]
-  [CFunc (args : (listof symbol)) (defaults : (listof CDefault)) (body : CExp)]
+  [CFunc (args : (listof symbol)) (defaults : (hashof symbol CExp)) (star : (optionof symbol)) (kwarg : (optionof symbol)) (body : CExp)]
   
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
@@ -63,10 +63,6 @@ containers: dict, (set)
 ;;objects
 ; questionable things: notimplemented, ellipses
 
-
-
-(define-type VDefault
-  [VD (id : symbol) (val : CVal)])
 (define-type CVal
   [VList (mutable : boolean) (elts : (listof CVal))];tuple = immutable, list = mutable
   [VNum (n : number)]
@@ -74,7 +70,7 @@ containers: dict, (set)
   [VTrue]
   [VFalse]
   [VNone]
-  [VClosure (env : Env) (args : (listof symbol)) (defaults : (listof VDefault)) (body : CExp)]
+  [VClosure (env : Env) (args : (listof symbol)) (defaults : (hashof symbol CVal)) (star : (optionof symbol)) (kwarg : (optionof symbol)) (body : CExp)]
   [VReturn (val : CVal)]
   [VObject (fields : (hashof CVal CVal))];mutable hash (MAKE VOBJECTS HAVE HASHES)
   [VDict (fields : (hashof CVal CVal))]

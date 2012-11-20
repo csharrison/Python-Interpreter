@@ -5,6 +5,8 @@
 (require (typed-in racket 
                    (string<? : (string string -> boolean))
                    (string<=? : (string string -> boolean))
+                   (take : ((listof 'a)  number -> (listof 'a)))
+                   [drop : ((listof 'a)  number -> (listof 'a))]
                    (string>? : (string string -> boolean))
                    (string>=? : (string string -> boolean))
                    (expt : (number number -> number))))
@@ -65,7 +67,83 @@
 ;;the bulk of the AppC case
 ;;recursively builds up the arguments (binds their values to ids)
 ;;and updates the closures environment / callers store
-(define (Apply (ids : (listof symbol)) (vals : (listof CExp)) (defs : (listof VDefault)) (caller-env : Env) (sto : Store) (clo-env : Env) (clo-body : CExp)) : Ans
+
+
+
+(define (iter-lst cvals vals env sto mutable) : Ans
+  (cond [(empty? cvals) (ValA (VList mutable vals) sto)]
+        [(cons? cvals) (interp-as env sto ([(val s) (first cvals)])
+                                  (iter-lst (rest cvals) (cons val vals) env s mutable))]))
+
+(define (val-lst (x1 : (listof symbol)) (x2 : (listof CVal)))
+  (map2 (lambda (x y) (values x y)) x1 x2))
+(define (get-vals h)
+  (map (lambda (x) (some-v (hash-ref h x))) (hash-keys h)))
+(define (get-val-lst h)
+  (map (lambda (x) (values x (some-v (hash-ref h x)))) (hash-keys h)))
+
+;;ordered, keys
+;;ids, defaults
+(define (apply-it (ordered : (listof CVal)) (keys : (hashof symbol CVal)) (closure : CVal) store)
+  (type-case CVal closure
+    [VClosure (env ids defaults star kwarg body)
+              (local ((define li (length ids))
+                      (define lo (length ordered))
+                      (define-values (restids restordered val-hash) 
+                        (if (> lo li)
+                            (values empty (drop ordered li) (make-hash (val-lst ids (take ordered li))))
+                            (values (take ids lo) empty (make-hash (val-lst (take ids lo) ordered))))))
+                (begin (if (some? star)
+                           (hash-set! val-hash (some-v star) (VList false restordered))
+                           (void))
+                       ;;ADD THE KEYS
+                       ;;returns an option of an ExnA, default tells us we shouldnt error out if id is already bound (but dont overwrite it)
+                       (local ((define (add-keys (ks : (listof (symbol * CVal))) default?)
+                                 (cond [(empty? ks) (none)]
+                                       [(cons? ks)
+                                        (local ((define-values (k v) (first ks))
+                                                (define op (hash-ref val-hash k)))
+                                          (cond [(some? op) (if default?
+                                                                (add-keys (rest ks) default?)
+                                                                (some (err store "identifier already bound: " (symbol->string k))))]
+                                                [else (begin (hash-set! val-hash k v) (add-keys (rest ks) default?))]))])))
+                         (type-case (optionof Ans) (add-keys (get-val-lst keys) false)
+                           [some (v) v]
+                           [none () (type-case (optionof Ans) (add-keys (get-val-lst defaults) true)
+                                      [some (v) (error 'interp "should never get here: default arguemnts")]
+                                      [none () ;;add all in val-hash to closures environment
+                                            (local ((define (add-to-env (ks : (listof (symbol * CVal))) this-env this-store)
+                                                      (cond [(empty? ks)      
+                                                             (type-case Ans (interp-full body this-env this-store)
+                                                               [ValA (v s) 
+                                                                     (type-case CVal v
+                                                                       [VReturn (value) (ValA value s)]
+                                                                       [else (ValA (VNone) s)])]
+                                                               [ExnA (v s) (ExnA v s)])]
+                                                            [(cons? ks) (local ((define-values (k v) (first ks))
+                                                                                (define-values (newe news) (update-env-store k v this-env this-store 'local)))
+                                                                          (add-to-env (rest ks) newe news))])))
+                                              (add-to-env (get-val-lst val-hash) env store))])]))))]
+    [else (err store "non closure at application")]))
+                                                                             
+     
+;;apply the other reverse~
+(define (Apply (vals : (listof CExp)) (keys : (hashof symbol CExp)) (caller-env : Env) (sto : Store) closure) : Ans
+  (type-case Ans (iter-lst vals empty caller-env sto false)
+    [ValA (v s) 
+          (type-case CVal v
+            [VList (m ordered) 
+                   (type-case Ans (iter-lst (get-vals keys) empty caller-env sto false)
+                     [ValA (key-vals s) 
+                           (type-case CVal key-vals
+                             [VList (m key-lst)
+                                    (let ((key-dict (hash (val-lst (hash-keys keys) (reverse key-lst)))))
+                                      (apply-it (reverse ordered) key-dict closure s))]
+                             [else (error 'interp "shouldnt get here")])]
+                     [ExnA (v s) (ExnA v s)])]
+            [else (error 'interp "shouldn't get here")])]
+    [ExnA (v s) (ExnA v s)]))
+#|
   (cond
     [(and (empty? ids) (empty? vals) (empty? defs)) 
      (type-case Ans (interp-full clo-body clo-env sto)
@@ -89,16 +167,14 @@
                   (Apply (rest ids) (rest vals) defs caller-env newsto newenv clo-body)))]
     
     [else (err sto "Application failed with arity mismatch: not enough values given to function")]))
-
+|#
 ;; RANDOM ASS COMMENT LINE!
 
-
-
 (define (iter-hash cvals vals env sto type)
-                       (cond [(empty? cvals) (ValA (type (make-hash vals)) sto)]
-                             [(cons? cvals) (local ((define-values (k c) (first cvals)))
-                                              (interp-as env sto ([(key s) k] [(value s2) c])
-                                                         (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
+  (cond [(empty? cvals) (ValA (type (make-hash vals)) sto)]
+        [(cons? cvals) (local ((define-values (k c) (first cvals)))
+                         (interp-as env sto ([(key s) k] [(value s2) c])
+                                    (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
@@ -204,21 +280,21 @@
                                       [VStr (s) (begin (hash-set! fields f v) (ValA (VNone) s3))]
                                       [else (err s3 "cannot reference object with " (pretty f))])]
                            [else (err s3 "cannot access field of " (pretty o))]))]
-    [CApp (fun args)
+    [CApp (fun args keys star kwarg)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
-                         [VClosure (clo-env ids defaults body)
-                                   (Apply ids args defaults env s clo-env body)]
+                         [VClosure (clo-env ids defaults star kwarg body)
+                                   (Apply args keys env s clos)]
                          [VObject (fields)
                                   (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
                                     [some (v) (type-case CVal v
-                                                [VClosure (clo-env ids defaults body)
+                                                [VClosure (clo-env ids defaults star kwarg body)
                                                           (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
                                                                            [some (st) (type-case CVal st
                                                                                         [VStr (class) (if (string=? class "class") args (cons fun args))]
                                                                                         [else (cons fun args)])]
                                                                            [none () (cons fun args)])))
-                                                            (Apply ids newargs defaults env s clo-env body))]                                                       
+                                                            (Apply newargs keys env s v))]                                                       
                                                 [else (err s "cannot call the object")])]
                                     [none () (err s "object does not have a __call__ attr")])]
                          [else (err s "Not a closure at application: " (pretty clos))]))]
@@ -226,19 +302,19 @@
     [CPartialApply (fun arg)
                    (interp-as env store ([(clos s) fun] [(a s2) arg])
                               (type-case CVal clos;;we know that clos and arg is going to be an id, so interping is fine
-                                [VClosure (clo-env ids defaults body)
+                                [VClosure (clo-env ids defaults star kwarg body)
                                           (local ((define-values (enew snew) (update-env-store (first ids) a clo-env s 'local)))
-                                            (ValA (VClosure enew (rest ids) defaults body) snew))]
+                                            (ValA (VClosure enew (rest ids) defaults star kwarg body) snew))]
                                 [else (err s2 "partial application of nonfunction")]))]
     
     ;;iterate through default arguments
-    [CFunc (args defaults body)
+    [CFunc (args defaults star kwarg body)
            (local ((define (iter cdefs vdefs sto)
                      (cond [(empty? cdefs)
-                            (ValA (VClosure (reset-scopes env) args vdefs body) sto)]
-                           [else (interp-as env sto ([(v s) (CD-expr (first cdefs))])
-                                            (iter (rest cdefs) (cons (VD (CD-id (first cdefs)) v) vdefs) s))])))
-             (iter defaults empty store))]
+                            (ValA (VClosure (reset-scopes env) args (hash vdefs) star kwarg body) sto)]
+                           [else (interp-as env sto ([(v s) (some-v (hash-ref defaults (first cdefs)))])
+                                            (iter (rest cdefs) (cons (values (first cdefs) v) vdefs) s))])))
+             (iter (hash-keys defaults) empty store))]
     
     [CBinOp (op left right) 
             (interp-as env store ([(l s) left] [(r s2) right])
@@ -260,9 +336,13 @@
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
-                          ['is (ValA (VBool (eq? l r)) s2)]
+                          [(is isnot) (ValA (VBool ((case op ['is identity] ['isnot not])
+                                                    ((type-case CVal l
+                                                      [VList (m l) eq?]
+                                                      [VObject (f) eq?]
+                                                      [else equal?]) l r))) s2)]
                           ['isnot (ValA (VBool (not (eq? l r))) s2)]
-                          [(==) (begin (ValA (VBool (equal? l r)) s2))]
+                          [(==) (ValA (VBool (equal? l r)) s2)]
                           [(!=) (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))
                                                     (VBool ((case op ['< <] ['<= <=] ['> >] ['>= >=]) (VNum-n l) (VNum-n r)))]

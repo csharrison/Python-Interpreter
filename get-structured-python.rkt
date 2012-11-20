@@ -53,7 +53,13 @@ structure that you define in python-syntax.rkt
                  ('args args-list)
                  ('func func-expr))
      (PyApp (get-structure func-expr)
-            (map get-structure args-list))]
+            (map get-structure args-list)
+            (Hash (map (lambda (x)
+                         (values2 (string->symbol (first x))
+                                 (get-structure (second x)))) keywords))
+            (if (equal? #\nul starargs) (None) (Some (get-structure starargs)))
+            (if (equal? #\nul kwargs) (None) (Some (get-structure kwargs))))]
+     
     [(hash-table ('nodetype "Assign")
                  ('targets targets)
                  ('value value))
@@ -75,17 +81,17 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Lambda")
                  ('args args)
                  ('body body))
-     (local ((define-values (defaults a) (get-structure args)))
-       (PyFun a defaults (PyReturn (get-structure body))))]
+     (local ((define-values (regs defs stars kwars) (get-structure args)))
+       (PyFun regs defs stars kwars (PyReturn (get-structure body))))]
     [(hash-table ('nodetype "FunctionDef")
                  ('name name)
                  ('args args)
                  ('body body)
                  ('decorator_list dec_lst)
                  ('returns returns))
-     (local ((define-values (ds a) (get-structure args)))
+     (local ((define-values (regs defs star kwar) (get-structure args)))
        (PyFunDef (string->symbol name) 
-                 a ds
+                 regs defs star kwar
                  (PySeq (map get-structure body))))]
     [(hash-table ('nodetype "Return")
                  ('value value))
@@ -107,10 +113,10 @@ structure that you define in python-syntax.rkt
              (define as (map get-structure args))
              (define reg-args (take as (- (length as) (length defs))))
              (define def-args (drop as (- (length as) (length defs)))))
-       (values (map (lambda (a v) (PD a v)) def-args defs)
-                     reg-args))]
-                     ;(if (equal? #\nul vararg) empty (VarArg (string->symbol vararg)))
-                     ;(if (equal? #\nul kwarg) empty (Kwarg (string->symbol kwarg)))))]
+       (values reg-args
+               (Hash (map (lambda (a v) (values2 a v)) def-args defs))
+               (if (equal? #\nul vararg) (None) (Some (string->symbol vararg)))
+               (if (equal? #\nul kwarg) (None) (Some (string->symbol kwarg)))))]
     [(hash-table ('nodetype "List")
                  ('ctx ctx)
                  ('elts elts))
