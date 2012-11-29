@@ -115,7 +115,9 @@ primitives here.
 
 (define (to-list arg mutable store)
   (type-case CVal arg
-    [VList (m elts) (ValA (VList mutable elts) store)]
+    [VList (m elts) 
+           (if (eq? m mutable) (ValA arg store)
+               (ValA (VList mutable elts) store))]
     [VStr (s) (ValA (VList mutable (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s "")))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [else (ExnA (VStr "cannot call list() on non iterable") store)]))
