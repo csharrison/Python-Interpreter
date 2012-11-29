@@ -361,6 +361,10 @@
                                                    [(and (VStr? l) (VStr? r))
                                                     (VBool ((case op ['< string<?] ['<= string<=?] ['> string>?] ['>= string>=?]) (VStr-s l) (VStr-s r)))])
                                              s2)]
+                          [(in notin) (type-case CVal r
+                                        [VList (m elts) (ValA (VBool ((case op ['in identity] ['notin not]) (member l elts))) s2)]
+                                        [VDict (h) (ValA (VBool ((case op ['in identity] ['notin not]) (member l (hash-keys h)))) s2)]
+                                        [else (err s2 "in not implemented for this type")])]
                           
                           [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
 
