@@ -45,6 +45,11 @@ structure that you define in python-syntax.rkt
                  ('ctx ctx))
      (PyGetAttr (get-structure value) (PyStr attr))]
     ["__init__" (PyStr "__init__")]
+    [(hash-table ('nodetype "keyword")
+                 ('arg arg)
+                 ('value value))
+     (values2 (string->symbol arg)
+              (get-structure value))]
      
     [(hash-table ('nodetype "Call")
                  ('keywords keywords) ;; ignoring keywords for now
@@ -54,9 +59,7 @@ structure that you define in python-syntax.rkt
                  ('func func-expr))
      (PyApp (get-structure func-expr)
             (map get-structure args-list)
-            (Hash (map (lambda (x)
-                         (values2 (string->symbol (first x))
-                                 (get-structure (second x)))) keywords))
+            (Hash (map get-structure keywords))
             (if (equal? #\nul starargs) (None) (Some (get-structure starargs)))
             (if (equal? #\nul kwargs) (None) (Some (get-structure kwargs))))]
      
