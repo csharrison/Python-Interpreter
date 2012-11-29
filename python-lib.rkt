@@ -64,6 +64,15 @@ ___fail
          (CIf (Compare 'is (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
 
+(define assert-notin
+  (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
+         (CIf (Compare 'notin (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
+
+(define assert-in
+  (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
+         (CIf (Compare 'in (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
 (define (exception-lambda [s : string]) : CExp
   (CFunc (list 'e) (hash empty) (none) (none)
       (CObject (make-hash (list 
@@ -108,6 +117,8 @@ ___fail
         (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)
+        (bind '___assertIn assert-in)
+        (bind '___assertNotIn assert-notin)
         ;(bind '___assertRaises assert-raises-lambda)
         (bind 'TypeError (exception-lambda "TypeError"))
         (bind 'KeyError (exception-lambda "KeyError"))
