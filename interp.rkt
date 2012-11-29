@@ -12,7 +12,9 @@
                    (expt : (number number -> number))))
 (define s+ string-append)
 
-
+(define (append-n lst n)
+  (cond [(zero? n) empty]
+        [else (append lst (append-n lst (- n 1)))]))
 
 ;;err : calls an error with all input strings appended
 (define-syntax err
@@ -328,6 +330,16 @@
                               (case op
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]
                                 [else (err s2 "invalid operation on strings: " (symbol->string op))])]
+                             [(and (VList? l) (VList? r) (eq? (VList-mutable r) (VList-mutable l)))
+                              (case op
+                                ['+ (ValA (VList (VList-mutable l) (append (VList-elts l) (VList-elts r))) s2)])]
+                             [(and (VList? l) (VNum? r))
+                              (case op
+                                ['* (ValA (VList (VList-mutable l) (append-n (VList-elts l) (VNum-n r))) s2)])]
+                             [(and (VList? r) (VNum? l))
+                              (case op
+                                ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
+                             
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
     
     [CPrim1 (prim arg) 
