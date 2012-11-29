@@ -28,8 +28,8 @@ ___fail
 
 (define (constructor type)
   (CFunc empty (hash empty) (some '-args) (none)
-         (CIf (Compare '> (CApp (CId 'len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 0))
-              (CIf (Compare '== (CApp (CId 'len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 1))
+         (CIf (Compare '> (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 0))
+              (CIf (Compare '== (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 1))
                    (CReturn (CPrim1 type (CIndex (CId '-args) (CNum 0))))
                    (CError (CStr "constructor takes no more than one arg!")))
               (CReturn (case type 
@@ -37,8 +37,11 @@ ___fail
                          ['list (CList true empty)]
                          ['tuple (CList false empty)]
                          ['bool (CFalse)]
+                         ['prim-len (CNum 0)]
                          ['str (CStr "")])))))
               
+
+
 
 (define assert-true-lambda
   (CFunc (list 'check-true) (hash empty) (none) (none)
@@ -92,7 +95,8 @@ ___fail
 (define lib-functions
   (list (bind 'print (make-prim 'print))
         (bind 'tagof (make-prim 'tag))
-        (bind 'len (make-prim 'len))
+        (bind 'prim-len (make-prim 'prim-len))
+        (bind 'len (constructor 'prim-len))
         (bind 'list (constructor 'list))
         (bind 'tuple (constructor 'tuple))
         (bind 'str (constructor 'str))

@@ -129,5 +129,5 @@ primitives here.
     [(bool) (ValA (BoolEval arg) store)]
     [(tuple) (to-list arg false store)]
     [(str) (ValA (VStr (pretty arg)) store)]
-    [(len) (len arg store)])))
+    [(prim-len) (len arg store)])))
 
