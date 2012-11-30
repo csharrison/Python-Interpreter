@@ -263,7 +263,7 @@
     
     [CObject (fields) (iter-hash (get-list fields) empty env store VObject)]
     [CDict (fields) (iter-hash (get-list fields) empty env store VDict)]
-    
+    [CSet (fields) (iter-hash (get-list fields) empty env store VSet)]
     [CGet (obj field)
           (begin 
             (interp-as env store ([(o s) obj] [(f s2) field])

@@ -57,6 +57,7 @@ containers: dict, (set)
   ;only difference between objects and classes: classes do not take implicit self, type=class
   [CObject (fields : (hashof CExp CExp))]
   [CDict (fields : (hashof CExp CExp))]
+  [CSet (elts : (hashof CExp CExp))]
   [CGet (obj : CExp) (field : CExp)]
   [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
   )
@@ -74,6 +75,7 @@ containers: dict, (set)
   [VReturn (val : CVal)]
   [VObject (fields : (hashof CVal CVal))];mutable hash (MAKE VOBJECTS HAVE HASHES)
   [VDict (fields : (hashof CVal CVal))]
+  [VSet (elts : (hashof CVal CVal))];CVal VNone
   [VNotDefined])
 
 

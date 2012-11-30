@@ -36,6 +36,7 @@ ___fail
                          ['dict (CDict (make-hash empty))]
                          ['list (CList true empty)]
                          ['tuple (CList false empty)]
+                         ['set (CSet (make-hash empty))]
                          ['bool (CFalse)]
                          ['prim-len (CNum 0)]
                          ['str (CStr "")])))))
@@ -108,6 +109,7 @@ ___fail
         (bind 'len (constructor 'prim-len))
         (bind 'list (constructor 'list))
         (bind 'tuple (constructor 'tuple))
+        (bind 'set (constructor 'set))
         (bind 'str (constructor 'str))
         (bind 'bool (constructor 'bool))
         (bind 'True true-val); we do this at parse time, which i think is better

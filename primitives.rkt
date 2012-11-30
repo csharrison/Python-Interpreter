@@ -73,6 +73,7 @@ primitives here.
     [VNotDefined () (VFalse)]
     [VObject (fields) (VTrue)]
     [VDict (fields) (VBool (not (empty? (hash-keys fields))))]
+    [VSet (elts) (VBool (not (empty? (hash-keys elts))))]
     [VReturn (val) (BoolEval val)]))
 
 (define (pretty arg)
@@ -88,6 +89,7 @@ primitives here.
     [VObject (fields) (string-append "Object: " "")]
     [VDict (fields) (string-join  (list "{" (string-join (map (lambda (k)
                                                                 (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
+    [VSet (elts) (string-join (list "{" (string-join (map pretty (hash-keys elts)) ", ") "}") "")]
     [VReturn (val) (pretty val)]))
 
 (define (tagof arg)
@@ -102,6 +104,7 @@ primitives here.
     [VClosure (env args defs s k body) "closure"]
     [VObject (fields) "object"]
     [VDict (fields) "dict"]
+    [VSet (elts) "set"]
     [VReturn (val) "return"]))
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))
@@ -120,7 +123,18 @@ primitives here.
                (ValA (VList mutable elts) store))]
     [VStr (s) (ValA (VList mutable (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s "")))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
+    [VSet (elts) (ValA (VList mutable (hash-keys elts)) store)]
     [else (ExnA (VStr "cannot call list() on non iterable") store)]))
+(define (to-set arg store)
+  (let ((h (make-hash empty)))
+    (type-case CVal arg
+      [VList (m elts) (begin (map (lambda (x) (hash-set! h x (VNone))) elts) (ValA (VSet h) store))]
+      [VDict (fields) (begin (map (lambda (x) (hash-set! h x (VNone))) (hash-keys fields)) (ValA (VSet h) store))]
+      [VStr (s) 
+            (begin
+              (map (lambda (x) (hash-set! h x (VNone))) (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s ""))))
+              (ValA (VSet h) store))]
+      [else (ExnA (VStr "cannot call set() on non iterable") store)])))
 
 (define (python-prim1 (op : symbol) (arg : CVal) store) : Ans
   (begin 
@@ -128,6 +142,7 @@ primitives here.
     [(print) (begin (print arg) (ValA arg store))]
     [(tag) (ValA (VStr (tagof arg)) store)]
     [(list) (to-list arg true store)]
+    [(set) (to-set arg store)]
     [(bool) (ValA (BoolEval arg) store)]
     [(tuple) (to-list arg false store)]
     [(str) (ValA (VStr (pretty arg)) store)]
