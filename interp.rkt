@@ -1,6 +1,7 @@
 #lang plai-typed
 
 (require "core-syntax.rkt"
+         "methods.rkt"
          "primitives.rkt")
 (require (typed-in racket 
                    (string<? : (string string -> boolean))
@@ -285,22 +286,23 @@
     [CApp (fun args keys star kwarg)
           (interp-as env store ([(clos s) fun])
                      (type-case CVal clos
-                         [VClosure (clo-env ids defaults star kwarg body)
-                                   (Apply args keys env s clos)]
-                         [VObject (fields)
-                                  (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
-                                    [some (v) (type-case CVal v
-                                                [VClosure (clo-env ids defaults star kwarg body)
-                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
-                                                                           [some (st) (type-case CVal st
-                                                                                        [VStr (class) (if (string=? class "class") args (cons fun args))]
-                                                                                        [else (cons fun args)])]
-                                                                           [none () (cons fun args)])))
-                                                            (Apply newargs keys env s v))]                                                       
-                                                [else (err s "cannot call the object")])]
-                                    [none () (err s "object does not have a __call__ attr")])]
-                         [else (err s "Not a closure at application: " (pretty clos))]))]
-    ;;INVARIANT: fun + arg must be ids
+                       [VClosure (clo-env ids defaults star kwarg body)
+                                 (Apply args keys env s clos)]
+                       [VObject (fields)
+                                (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
+                                  [some (v) (type-case CVal v
+                                              [VClosure (clo-env ids defaults star kwarg body)
+                                                        (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
+                                                                         [some (st) (type-case CVal st
+                                                                                      [VStr (class) (if (string=? class "class") args (cons fun args))]
+                                                                                      [else (cons fun args)])]
+                                                                         [none () (cons fun args)])))
+                                                          (Apply newargs keys env s v))]                                                       
+                                              [else (err s "cannot call the object")])]
+                                  [none () (err s "object does not have a __call__ attr")])]
+                       
+                       [else (err s "Not a closure at application: " (pretty clos))]))]
+;;INVARIANT: fun + arg must be ids
     [CPartialApply (fun arg)
                    (interp-as env store ([(clos s) fun] [(a s2) arg])
                               (type-case CVal clos;;we know that clos and arg is going to be an id, so interping is fine

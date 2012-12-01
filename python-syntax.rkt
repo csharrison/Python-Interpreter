@@ -32,6 +32,7 @@
   [PyNonLocal (x : symbol)]
   
   [PyDict (keys : (listof PyExpr)) (vals : (listof PyExpr))]
+  [PySet (elts : (listof PyExpr))]
   [PyAssign (targets : (listof PyExpr)) (value : PyExpr)]
   
   [PyClassDef (name : symbol) (base : symbol) (body : (listof PyExpr))]

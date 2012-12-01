@@ -248,6 +248,7 @@
     [PyDict (keys vals) (CDict (make-hash (map2 (lambda (x y) (values x y))
                                                           (map (lambda (x) (desug x scope)) keys)
                                                           (map (lambda (x) (desug x scope)) vals))))]
+    [PySet (elts) (CSet (make-hash (map (lambda (x) (values (desug x scope) (CNone))) elts)))]
     
                                                     
                                                           

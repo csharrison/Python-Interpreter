@@ -21,6 +21,9 @@ structure that you define in python-syntax.rkt
      (PySeq (map get-structure expr-list))]
     [(hash-table ('nodetype "Expr") ('value expr))
      (get-structure expr)]
+    [(hash-table ('nodetype "Set")
+                 ('elts elts))
+     (PySet (map get-structure elts))]
     [(hash-table ('nodetype "Dict")
                  ('keys keys)
                  ('values vals))
