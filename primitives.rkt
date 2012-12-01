@@ -1,7 +1,7 @@
 #lang plai-typed
 
-(require "core-syntax.rkt")
-
+(require "core-syntax.rkt"
+         "methods.rkt")
 #|
 
 Since there may end up being a large number of primitives that you
@@ -130,6 +130,7 @@ primitives here.
     (type-case CVal arg
       [VList (m elts) (begin (map (lambda (x) (hash-set! h x (VNone))) elts) (ValA (VSet h) store))]
       [VDict (fields) (begin (map (lambda (x) (hash-set! h x (VNone))) (hash-keys fields)) (ValA (VSet h) store))]
+      [VSet (elts) (ValA arg store)]
       [VStr (s) 
             (begin
               (map (lambda (x) (hash-set! h x (VNone))) (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s ""))))
@@ -146,5 +147,6 @@ primitives here.
     [(bool) (ValA (BoolEval arg) store)]
     [(tuple) (to-list arg false store)]
     [(str) (ValA (VStr (pretty arg)) store)]
-    [(prim-len) (len arg store)])))
+    [(prim-len) (len arg store)]
+    [(items clear values keys) (dict-method op arg store)])))
 

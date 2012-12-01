@@ -273,6 +273,14 @@
                                   (type-case (optionof CVal) (hash-ref fields f)
                                     [some (v) (ValA v s2)]
                                     [none () (err s2 "object lookup failed: " (pretty f))])]
+                         [VDict (elts)
+                                (type-case CVal f
+                                  [VStr (s) (case (string->symbol s)
+                                              [(items clear values keys) (ValA (VClosure env (list '-the-dict) (hash empty) (none) (none)
+                                                                                         (CReturn (CPrim1 (string->symbol s) (CId '-the-dict)))) s2)]
+                                              
+                                              [else (err s2 "dict has not method " s)])]
+                                  [else (err s2 "dict lookup")])]
                          [else (err s2 (pretty o) " is not an object, failed at lookup")])))]
                          
     [CSetAttr (obj field val)
@@ -341,6 +349,7 @@
                              [(and (VList? r) (VNum? l))
                               (case op
                                 ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
+                             [(and (VSet? r) (VSet? l)) (set-op op l r s2)]
                              
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
     

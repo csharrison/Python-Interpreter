@@ -205,13 +205,17 @@
     [PyGetAttr (target attr)
                (let ((t (make-id))
                      (a (make-id))
+                     (tag  (make-id))
                      (result (make-id)))
                  (CLet t 'local (desug target scope)
                        (CLet a 'local (desug attr scope)
                              (CLet result 'local (CGet (CId t) (CId a))
-                                   (CIf (Compare '== (CApp (CId 'tagof) (list (CId result)) (hash empty) (none) (none)) (CStr "closure"))
-                                        (CPartialApply (CId result) (CId t));;give the target as first argument
-                                        (CId result))))))]
+                                   (CLet tag 'local (CApp (CId 'tagof) (list (CId result)) (hash empty) (none) (none))
+                                         (CIf (Compare '== (CId tag) (CStr "closure"))
+                                              (CPartialApply (CId result) (CId t));;give the target as first argument
+                                              (CIf (Compare '== (CId tag) (CStr "dict"))
+                                                   (CPartialApply (CId result) (CId t))
+                                                   (CId result))))))))]
     [PyFun (args defaults star kwarg body) (CFunc args 
                                                   (convert-defaults defaults scope) 
                                                   star kwarg
