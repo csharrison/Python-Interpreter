@@ -279,6 +279,12 @@
                                               [(items clear values keys) (ValA (VClosure env (list '-the-dict) (hash empty) (none) (none)
                                                                                          (CReturn (CPrim1 (string->symbol s) (CId '-the-dict)))) s2)]
                                               
+                                              ['update (ValA (VClosure env (list '-the-dict) (hash empty) (some '-args) (none)
+                                                                       (CIf (Compare '> (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 0))
+                                                                            (CIf (Compare '== (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none)) (CNum 1))
+                                                                                 (CReturn (CBinOp (string->symbol s) (CId '-the-dict) (CIndex (CId '-args) (CNum 0))))
+                                                                                 (CError (CStr "update takes no more than one arg!")))
+                                                                            (CReturn (CId '-the-dict)))) s2)]
                                               [else (err s2 "dict has not method " s)])]
                                   [else (err s2 "dict lookup")])]
                          [else (err s2 (pretty o) " is not an object, failed at lookup")])))]
@@ -350,6 +356,7 @@
                               (case op
                                 ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
                              [(and (VSet? r) (VSet? l)) (set-op op l r s2)]
+                             [(and (VDict? r) (VDict? l)) (dict-op op l r s2)]
                              
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
     
