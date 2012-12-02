@@ -196,6 +196,8 @@
                                  [VNum (n) (case op
                                              ['+ (ValA v s)] ['- (ValA (VNum (- 0 n)) s)] 
                                              [else (err s "not defined on numbers: " (symbol->string op))])]
+                                 [VTrue () (ValA (VNum (case op ['+ 1] ['- -1] ['~ -2])) s)]
+                                 [VFalse () (ValA (VNum (case op ['~ -1] [else 0])) s)]
                                  [else (err s "bad operand for unary operation" (symbol->string op))])]))]
     
     [CError (ex) (type-case Ans (interp-full ex env store)
@@ -336,6 +338,8 @@
     
     [CBinOp (op left right) 
             (interp-as env store ([(l s) left] [(r s2) right])
+                       (let ((l (type-case CVal l [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else l]))
+                             (r (type-case CVal r [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else r])))
                        (cond [(and (VNum? l) (VNum? r))
                               (let ((nl (VNum-n l)) (nr (VNum-n r)))
                                 (case op
@@ -357,8 +361,7 @@
                                 ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
                              [(and (VSet? r) (VSet? l)) (set-op op l r s2)]
                              [(and (VDict? r) (VDict? l)) (dict-op op l r s2)]
-                             
-                             [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )]))]
+                             [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
     
     [CPrim1 (prim arg) 
             (interp-as env store ([(v s) arg])
@@ -371,7 +374,6 @@
                                                       [VList (m l) eq?]
                                                       [VObject (f) eq?]
                                                       [else equal?]) l r))) s2)]
-                          ['isnot (ValA (VBool (not (eq? l r))) s2)]
                           [(==) (ValA (VBool (equal? l r)) s2)]
                           [(!=) (ValA (VBool (not (equal? l r))) s2)]
                           [(< <= >= >) (ValA (cond [(and (VNum? l) (VNum? r))

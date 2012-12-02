@@ -38,6 +38,9 @@ ___fail
                          ['tuple (CList false empty)]
                          ['set (CSet (make-hash empty))]
                          ['bool (CFalse)]
+                         [(int) (CNum 0)]
+                         ['abs (CError (CStr "abs takes only one arg!"))]
+                         ['float (CNum 0.0)]
                          ['prim-len (CNum 0)]
                          ['str (CStr "")])))))
               
@@ -64,7 +67,10 @@ ___fail
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'is (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
-
+(define assert-isnot
+  (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
+         (CIf (Compare 'isnot (CId 'first-elt) (CId 'second-elt)) (CTrue)
+              (CError (CStr "Assert failed")))))
 (define assert-notin
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'notin (CId 'first-elt) (CId 'second-elt)) (CTrue)
@@ -112,10 +118,14 @@ ___fail
         (bind 'set (constructor 'set))
         (bind 'str (constructor 'str))
         (bind 'bool (constructor 'bool))
+        (bind 'int (constructor 'int))
+        (bind 'abs (constructor 'abs))
+        (bind 'float (constructor 'float))
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-is)
+        (bind '___assertIsNot assert-isnot)
         (bind '___assertNotEqual assert-not-equal-lambda)
         (bind '___assertTrue assert-true-lambda)
         (bind '___assertFalse assert-false-lambda)

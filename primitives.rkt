@@ -76,6 +76,12 @@ primitives here.
     [VSet (elts) (VBool (not (empty? (hash-keys elts))))]
     [VReturn (val) (BoolEval val)]))
 
+(define (num-of type (val : CVal) store)
+  (type-case CVal val
+    [VTrue () (ValA (VNum (case type [(int abs) 1] ['float 1.0])) store)]
+    [VFalse () (ValA (VNum (case type [(int abs) 0] ['float 0.0])) store)]
+    [else (ExnA (VStr "int() argument must be booleans") store)]))
+
 (define (pretty arg)
   (type-case CVal arg
     [VNum (n) (to-string n)]
@@ -145,6 +151,7 @@ primitives here.
     [(list) (to-list arg true store)]
     [(set) (to-set arg store)]
     [(bool) (ValA (BoolEval arg) store)]
+    [(int float abs) (num-of op arg store)]
     [(tuple) (to-list arg false store)]
     [(str) (ValA (VStr (pretty arg)) store)]
     [(prim-len) (len arg store)]
