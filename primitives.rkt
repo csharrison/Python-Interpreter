@@ -18,10 +18,18 @@ primitives here.
                    [drop : ((listof 'a)  number -> (listof 'a))]
                    [take : ((listof 'a)  number -> (listof 'a))]
                    [string-length : (string -> number)]
+                   (string<? : (string string -> boolean))
+                   (string>? : (string string -> boolean))
+                   (string-replace :(string string string -> string))
                    [string-split : (string string -> (listof string))]
                    [range : (number number number -> (listof number))]))
 (define (valid-index c)
   (or (VNone? c) (VNum? c)))
+
+(define (str-to-list str)
+  (filter (lambda (x) (not (string=? x ""))) (string-split str "")))
+(define (str-in str isin)
+  (not (string=? str (string-replace str isin ""))))
 
 (define (my-drop lst n)
   (cond [(> n (length lst)) empty]
@@ -50,14 +58,20 @@ primitives here.
 
 (define (slice (lst : CVal) (lower : CVal) (upper : CVal) (step : CVal) (sto : Store))
   (if (and (valid-index lower) (valid-index upper) (valid-index step))
-      (type-case CVal lst
-        [VList (m elts)
-               (let ((l (if (VNone? lower) 0 (VNum-n lower)))
-                     (u (if (VNone? upper) (length elts) (VNum-n upper)))
-                     (s (if (VNone? step) 1 (VNum-n step))))
-                   (ValA (VList m (drop-n (between elts l u) s)) sto))]
-        [else (ExnA (VStr "nonlist not subscriptable!") sto)])
-      (ExnA (VStr "list indices must be integers!") sto)))
+            (type-case CVal lst
+              [VList (m elts)
+                     (let ((l (if (VNone? lower) 0 (VNum-n lower)))
+                           (u (if (VNone? upper) (length elts) (VNum-n upper)))
+                           (s (if (VNone? step) 1 (if (< (VNum-n step) 0) (- 0 (VNum-n step)) (VNum-n step))))
+                           (elts (if (and (VNum? step) (< (VNum-n step) 0)) (reverse elts) elts)))
+                       (ValA (VList m (drop-n (between elts l u) s)) sto))]
+              [VStr (str) (type-case Ans (slice (VList false (map VStr (str-to-list str))) lower upper step sto)
+                            [ValA (v s) (type-case CVal v
+                                         [VList (m l) (ValA (VStr (string-join (map VStr-s l) "")) sto)]
+                                         [else (error 'slice "slice returned non-lst")])]
+                            [ExnA (v s) (ExnA v s)])]
+              [else (ExnA (VStr "nonlist not subscriptable!") sto)])
+        (ExnA (VStr "list indices must be integers!") sto)))
            
 (define (VBool v)
   (if v (VTrue) (VFalse)))
@@ -98,6 +112,18 @@ primitives here.
     [VSet (elts) (string-join (list "{" (string-join (map pretty (hash-keys elts)) ", ") "}") "")]
     [VReturn (val) (pretty val)]))
 
+(define (str-op op str store)
+  (type-case CVal str
+    [VStr (s) (local ((define lst (str-to-list s))
+                      (define (find-extreme (l : (listof string)) comparator) : string 
+                        (cond [(empty? (rest l)) (first l)]
+                              [else (let ((max (find-extreme (rest l) comparator)))
+                                      (if (comparator (first l) max)
+                                          (first l) max))])))
+                      (ValA (VStr (find-extreme lst (case op ['min string<?] ['max string>?]))) store))]
+                
+    [else (ExnA (VStr "min on non-string") store)]))
+
 (define (tagof arg)
   (type-case CVal arg
     [VNum (n) "number"]
@@ -127,7 +153,7 @@ primitives here.
     [VList (m elts) 
            (if (eq? m mutable) (ValA arg store)
                (ValA (VList mutable elts) store))]
-    [VStr (s) (ValA (VList mutable (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s "")))) store)]
+    [VStr (s) (ValA (VList mutable (map VStr (str-to-list s))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [VSet (elts) (ValA (VList mutable (hash-keys elts)) store)]
     [else (ExnA (VStr "cannot call list() on non iterable") store)]))
@@ -155,5 +181,6 @@ primitives here.
     [(tuple) (to-list arg false store)]
     [(str) (ValA (VStr (pretty arg)) store)]
     [(prim-len) (len arg store)]
+    [(min max) (str-op op arg store)]
     [(items clear values keys) (dict-method op arg store)])))
 

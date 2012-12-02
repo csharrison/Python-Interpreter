@@ -13,6 +13,9 @@
                    (expt : (number number -> number))))
 (define s+ string-append)
 
+(define (str-mult str n)
+  (cond [(zero? n) ""]
+        [else (string-append str (str-mult str (- n 1)))]))
 (define (append-n lst n)
   (cond [(zero? n) empty]
         [else (append lst (append-n lst (- n 1)))]))
@@ -354,13 +357,16 @@
                               (case op
                                 ['+ (ValA (VList (VList-mutable l) (append (VList-elts l) (VList-elts r))) s2)])]
                              [(and (VList? l) (VNum? r))
-                              (case op
-                                ['* (ValA (VList (VList-mutable l) (append-n (VList-elts l) (VNum-n r))) s2)])]
+                              (case op['* (ValA (VList (VList-mutable l) (append-n (VList-elts l) (VNum-n r))) s2)])]
                              [(and (VList? r) (VNum? l))
-                              (case op
-                                ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
+                              (case op ['* (ValA (VList (VList-mutable r) (append-n (VList-elts r) (VNum-n l))) s2)])]
                              [(and (VSet? r) (VSet? l)) (set-op op l r s2)]
                              [(and (VDict? r) (VDict? l)) (dict-op op l r s2)]
+                             [(and (VStr? l) (VNum? r))
+                              (case op ['* (ValA (VStr (str-mult (VStr-s l) (VNum-n r))) s2)])]
+                             [(and (VStr? r) (VNum? l))
+                              (case op ['* (ValA (VStr (str-mult (VStr-s r) (VNum-n l))) s2)])]
+                              
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
     
     [CPrim1 (prim arg) 
@@ -384,6 +390,10 @@
                           [(in notin) (type-case CVal r
                                         [VList (m elts) (ValA (VBool ((case op ['in identity] ['notin not]) (member l elts))) s2)]
                                         [VDict (h) (ValA (VBool ((case op ['in identity] ['notin not]) (member l (hash-keys h)))) s2)]
+                                        [VStr (s) 
+                                              (type-case CVal l
+                                                [VStr(left) (ValA (VBool ((case op ['in identity] ['notin not]) (str-in s left))) s2)]
+                                                [else (err s2 "cannot find nonstring in string")])]
                                         [else (err s2 "in not implemented for this type")])]
                           
                           [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
