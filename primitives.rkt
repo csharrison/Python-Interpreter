@@ -41,6 +41,16 @@ primitives here.
 (define (between lst lower upper)
   (let ((len (length lst)))
     (drop (take lst (min upper len)) lower)))
+
+(define (callable elt store)
+  (type-case CVal elt
+    [VClosure (e args defs star kwar b) (ValA (VTrue) store)]
+    [VObject (fields) 
+             (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
+               [some (v) (ValA (VTrue) store)]
+               [none () (ValA (VFalse) store)])]
+    [else (ValA (VFalse) store)]))
+
 (define (index (lst : CVal) (i : CVal) store)
   (local ((define (nth lst n)
                    (cond [(zero? n) (first lst)]
@@ -173,6 +183,7 @@ primitives here.
   (begin 
   (case op
     [(print) (begin (print arg) (ValA arg store))]
+    [(callable) (callable arg store)]
     [(tag) (ValA (VStr (tagof arg)) store)]
     [(list) (to-list arg true store)]
     [(set) (to-set arg store)]

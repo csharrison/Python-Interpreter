@@ -111,6 +111,7 @@ ___fail
 (define lib-functions
   (list (bind 'print (make-prim 'print))
         (bind 'tagof (make-prim 'tag))
+        (bind 'callable (make-prim 'callable))
         (bind 'min (make-prim 'min))
         (bind 'max (make-prim 'max))
         (bind 'prim-len (make-prim 'prim-len))
