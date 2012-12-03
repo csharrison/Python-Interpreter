@@ -183,6 +183,7 @@
                                     (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
+  (begin ;(display env) (display "\n") (display expr) (display "\n\n\n")
   (type-case CExp expr
     [CNum (n) (ValA (VNum n) store)]
     [CStr (s) (ValA (VStr s) store)]
@@ -229,7 +230,7 @@
                       (case type
                         [(local nonlocal)
                          (type-case (optionof Location) (lookup id env type)
-                           [some (loc) (ValA v (hash-set s loc v))]
+                           [some (loc) (begin (ValA v (hash-set s loc v)))]
                            [none () (err s "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
                         ['global (begin (set! globals (hash-set globals id v)) (ValA v s))]))]
     
@@ -369,9 +370,10 @@
                               
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
     
-    [CPrim1 (prim arg) 
+    [CPrim1 (prim arg)
+            (begin ;(display env) (display "\n") (display store) (display "\n")
             (interp-as env store ([(v s) arg])
-                       (python-prim1 prim v s))]
+                       (python-prim1 prim v env s)))]
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op
@@ -396,7 +398,7 @@
                                                 [else (err s2 "cannot find nonstring in string")])]
                                         [else (err s2 "in not implemented for this type")])]
                           
-                          [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
+                          [else (err s2 "comparator not implemented: " (symbol->string op))]))])))
 
 
 (define (interp expr) : CVal

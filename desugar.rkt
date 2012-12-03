@@ -152,8 +152,11 @@
                    [else (Err "no assign case yet for ")])]
     
     [PyPass () (CNone)]
-    
-    
+    [PyLocals ()
+              (CLet '-locals 'local (CPrim1 'locals (CNone))
+                    (CFunc empty (hash empty) (none) (none)
+                           (CReturn (CId '-locals))))]
+
     
     [PyFunDef (name args defaults star kwarg body) 
               (let ((thefun (make-id)))

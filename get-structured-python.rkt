@@ -83,6 +83,7 @@ structure that you define in python-syntax.rkt
        ["True" (PyTrue)]
        ["False" (PyFalse)]
        ["None" (PyNone)]
+       ["locals"(PyLocals)]
        [_  (PyId (string->symbol id))])]
     [(hash-table ('nodetype "Lambda")
                  ('args args)

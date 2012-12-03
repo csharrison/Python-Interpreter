@@ -43,9 +43,7 @@ ___fail
                          ['float (CNum 0.0)]
                          ['prim-len (CNum 0)]
                          ['str (CStr "")])))))
-              
-
-
+  
 
 (define assert-true-lambda
   (CFunc (list 'check-true) (hash empty) (none) (none)

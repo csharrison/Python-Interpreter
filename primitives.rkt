@@ -51,6 +51,15 @@ primitives here.
                [none () (ValA (VFalse) store)])]
     [else (ValA (VFalse) store)]))
 
+(define (locals env store)
+  (type-case Env env
+    [Ev (locs nonlocs) (let ((lst (map (lambda (x)
+                                         (values (VStr (symbol->string x))
+                                                 (type-case (optionof CVal) (hash-ref store (some-v (hash-ref locs x)))
+                                                   [some(v) v]
+                                                   [none () (error '-locals "identifier not found in store")]))) (hash-keys locs))))
+                         (ValA (VDict (make-hash (filter (lambda (x) (local ((define-values (k v) x)) (not (VNotDefined? v)))) lst))) store))]))
+
 (define (index (lst : CVal) (i : CVal) store)
   (local ((define (nth lst n)
                    (cond [(zero? n) (first lst)]
@@ -179,11 +188,12 @@ primitives here.
               (ValA (VSet h) store))]
       [else (ExnA (VStr "cannot call set() on non iterable") store)])))
 
-(define (python-prim1 (op : symbol) (arg : CVal) store) : Ans
+(define (python-prim1 (op : symbol) (arg : CVal) env store) : Ans
   (begin 
   (case op
     [(print) (begin (print arg) (ValA arg store))]
     [(callable) (callable arg store)]
+    [(locals) (locals env store)]
     [(tag) (ValA (VStr (tagof arg)) store)]
     [(list) (to-list arg true store)]
     [(set) (to-set arg store)]
