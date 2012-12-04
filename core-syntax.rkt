@@ -53,7 +53,7 @@ containers: dict, (set)
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
   [CNotDefined]
-  
+  [CDelete (target : CExp)]
   ;only difference between objects and classes: classes do not take implicit self, type=class
   [CObject (fields : (hashof CExp CExp))]
   [CDict (fields : (hashof CExp CExp))]

@@ -234,7 +234,6 @@
                            [none () (err s "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
                         ['global (begin (set! globals (hash-set globals id v)) (ValA v s))]))]
     
-    
     [CLet (x type bind body)
           (begin 
             (interp-as env store([(v s) bind])
@@ -264,6 +263,14 @@
                        (slice lst lower upper step s4))]
     [CIndex (l i) (interp-as env store ([(lst s) l] [(idex s2) i])
                              (index lst idex s2))]
+    [CDelete (target)
+             (type-case CExp target
+               [CIndex (l i) (interp-as env store ([(lst s) l] [(idex s2) i])
+                                        (type-case CVal lst
+                                          [VDict (elts) (begin (hash-remove! elts idex) (ValA lst store))]
+                                          ;todo - lists!!!
+                                          [else (err store "bad index syntax")]))]
+               [else (err store "delete only implemented for indexes")])]
     
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
@@ -280,7 +287,7 @@
                                     [some (v) (ValA v s2)]
                                     [none () (err s2 "object lookup failed: " (pretty f))])]
                          [VDict (elts)
-                                (type-case CVal f
+                                (type-case CVal f ;only for dict method (band aid)
                                   [VStr (s) (case (string->symbol s)
                                               [(items clear values keys) (ValA (VClosure env (list '-the-dict) (hash empty) (none) (none)
                                                                                          (CReturn (CPrim1 (string->symbol s) (CId '-the-dict)))) s2)]
@@ -302,6 +309,7 @@
                                     (type-case CVal f
                                       [VStr (s) (begin (hash-set! fields f v) (ValA (VNone) s3))]
                                       [else (err s3 "cannot reference object with " (pretty f))])]
+                           [VDict (elts) (begin (hash-set! elts f v) (ValA o s3))]
                            [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args keys star kwarg)
           (interp-as env store ([(clos s) fun])

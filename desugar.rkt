@@ -137,6 +137,7 @@
                      (type-case PyExpr (first targets)
                        [PyId (id) (CSet! id (desug value scope) (get-scope-type id scope))]
                        [PyGetAttr (target field) (CSetAttr (desug target scope) (desug field scope ) (desug value scope))]
+                       [PyIndex (target i) (CSetAttr (desug target scope) (desug i scope) (desug value scope))]
                        [else (Err "no assign case yet for ")])]
                     [(cons? (rest targets))
                      (Err "no assign for iterables")])]
@@ -152,6 +153,7 @@
                    [else (Err "no assign case yet for ")])]
     
     [PyPass () (CNone)]
+    [PyDelete (target) (CDelete (desug target scope))]
     [PyLocals ()
               (CLet '-locals 'local (CPrim1 'locals (CNone))
                     (CFunc empty (hash empty) (none) (none)

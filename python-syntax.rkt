@@ -37,7 +37,7 @@
   
   [PyClassDef (name : symbol) (base : symbol) (body : (listof PyExpr))]
   [PyGetAttr (target : PyExpr) (attr : PyExpr)]
-  
+  [PyDelete (target : PyExpr)]
   [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
   [PyFun (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
   

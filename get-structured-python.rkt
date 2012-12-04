@@ -85,6 +85,9 @@ structure that you define in python-syntax.rkt
        ["None" (PyNone)]
        ["locals"(PyLocals)]
        [_  (PyId (string->symbol id))])]
+    [(hash-table ('nodetype "Delete")
+                 ('targets targets))
+     (PyDelete (get-structure (first targets)))]
     [(hash-table ('nodetype "Lambda")
                  ('args args)
                  ('body body))
