@@ -457,5 +457,6 @@
                                                   [some (errmessage) (begin (error 'interp (pretty errmessage)) v)]
                                                   [none () (error 'interp  "exception must have value __errexp__")])]
                                       [none () (error 'interp "exception must have value __exceptiontype__")])]
+                    [VStr (s) (begin (error 'interp-internal s) v)]
                     [else (error 'interp "exceptions must extend the base type exception")])])))
 
