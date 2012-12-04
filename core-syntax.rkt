@@ -59,6 +59,9 @@ containers: dict, (set)
   [CDict (fields : (hashof CExp CExp))]
   [CGet (obj : CExp) (field : CExp)]
   [CSetAttr (obj : CExp) (field : CExp) (val : CExp)]
+  [CTryFinally (body : CExp) (finallyBody : CExp)]
+  [CTryExcept (body : CExp) (handlermap : (hashof (optionof CExp) CExp)) (else : CExp)]
+  [CExceptHandler (body : CExp) (type : (optionof CExp)) (name : (optionof CExp))]
   )
 ;;objects
 ; questionable things: notimplemented, ellipses

@@ -49,11 +49,11 @@ ___fail
 
 (define (exception-lambda [s : string]) : CExp
   (CFunc (list 'e) empty
-      (CObject (make-hash (list 
+      (CReturn (CObject (make-hash (list 
                            (values (CStr "__type__") (CStr "exception"))
                            (values (CStr "__class__") (CStr "class"))
                            (values (CStr "__exceptiontype__") (CStr s))
-                           (values (CStr "__errexp__") (CId 'e)))))))
+                           (values (CStr "__errexp__") (CId 'e))))))))
 
 
 
@@ -62,7 +62,9 @@ ___fail
          (CLet 'fun-call 'local (CApp (CId 'func) empty)
                (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'fun-call))) (CStr "object"))
                     (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__type__")) (CStr "exception"))
-                         (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__exceptiontype__")) (CId 'exc-type))
+                         (CIf (Compare '== 
+                                       (CGet (CId 'fun-call) (CStr "__exceptiontype__")) 
+                                       (CGet (CId 'exc-type) (CStr "__exceptiontype__")))
                               (CTrue)
                               (CError (CStr "Assert failed")))
                          (CError (CStr "Assert failed")))

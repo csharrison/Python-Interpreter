@@ -1,5 +1,8 @@
 #lang plai-typed
 
+(define (Some n) (some n))
+(define (None) (none))
+
 (define-type PyDefault
   [PD (id : symbol) (val : PyExpr)])
 
@@ -45,6 +48,10 @@
   [PyPass]
   [PyBinOp (op : symbol) (left : PyExpr) (right : PyExpr)]
   
+  [PyTryFinally (body : PyExpr) (finallyBody : PyExpr)]
+  [PyTryExcept (body : PyExpr) (handlers : (listof PyExpr)) (else : PyExpr)]
+  [PyExceptHandler (body : PyExpr) (type : (optionof PyExpr)) (name : (optionof PyExpr))]
+
   [PyNotImplemented]
   
   [PyRaise (e1 : PyExpr)])

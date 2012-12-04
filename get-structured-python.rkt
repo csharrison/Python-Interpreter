@@ -160,6 +160,27 @@ structure that you define in python-syntax.rkt
                  ('value value)
                  ('op op))
      (PyAugAssign (get-structure target) (get-structure op) (get-structure value))]
+    
+    [(hash-table ('nodetype "TryFinally")
+                 ('body body)
+                 ('finalbody finalbody))
+     (PyTryFinally (PySeq (map get-structure body)) (PySeq (map get-structure finalbody)))]
+    
+    [(hash-table ('nodetype "TryExcept")
+                 ('body body)
+                 ('orelse else)
+                 ('handlers handlersList))
+       (PyTryExcept (PySeq (map get-structure body))
+                    (map get-structure handlersList)
+                    (PySeq (map get-structure else)))]
+    
+    [(hash-table ('nodetype "ExceptHandler")
+                 ('name name)
+                 ('type type)
+                 ('body body))
+     (PyExceptHandler (PySeq (map get-structure body)) 
+                      (if (eq? type #\nul) (None) (Some (get-structure type))) 
+                      (if (eq? name #\nul) (None) (Some (get-structure name))))]
                
     
     [(hash-table ('nodetype "If")

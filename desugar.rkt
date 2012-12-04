@@ -6,7 +6,7 @@
                    (flatten : ((listof (listof 'a)) -> (listof 'a)))
                    ))
 ;;err : calls an error with all input strings appended
-(define (map2 (f :  ('a 'a -> 'b)) (l1 : (listof 'a)) (l2 :(listof 'a))) : (listof 'b)
+(define (map2 (f :  ('a 'b -> 'c)) (l1 : (listof 'a)) (l2 :(listof 'b))) : (listof 'c)
   (cond [(empty? l1) empty]
         [(cons? l1) (cons (f (first l1) (first l2)) (map2 f (rest l1) (rest l2)))]))
 
@@ -78,6 +78,28 @@
                              [else (begin (error 'desugar "no assign for iterables") scope)])]
              [PyFunDef (name args defaults body) (modify-scope name scope (if global? 'global 'local))]
              [PyClassDef (name base body) (modify-scope name scope (if global? 'global 'local))]
+             [PyTryFinally (body finally)
+                           (type-case PyExpr body
+                             [PySeq (b-es) 
+                                    (type-case PyExpr finally
+                                      [PySeq (f-es) (get-scope (PySeq (append b-es f-es)) scope)]
+                                      [else (begin (error 'desugar "finally not a seq") scope)])]
+                             [else (begin (error 'desugar "body not a seq"))])]
+             [PyTryExcept (body handlers elsebody)
+                          (local ((define (get-all-bodies (hndls : (listof PyExpr)) (accum : (listof PyExpr)))
+                                    (cond 
+                                      [(empty? hndls) accum]
+                                      [(cons? hndls) 
+                                       (type-case PyExpr (first hndls)
+                                         [PyExceptHandler (body t n)
+                                                          (type-case PyExpr body
+                                                            [PySeq (bodyseq)
+                                                                   (get-all-bodies (rest hndls) (append accum bodyseq))]
+                                                            [else (begin (error 'desugar "PyExceptHandler body not seq") accum)])]
+                                         [else (begin (error 'desugar "expected PyExceptHandler, found something else"))])])))
+                            (get-scope (PySeq (get-all-bodies handlers empty)) scope))]
+                                                        
+                                                          
              [else scope])))
     (get-scope expr (hash empty)))))
 
@@ -234,7 +256,29 @@
     [PyDict (keys vals) (CDict (make-hash (map2 (lambda (x y) (values x y))
                                                           (map (lambda (x) (desug x scope)) keys)
                                                           (map (lambda (x) (desug x scope)) vals))))]
-    
+    [PyTryFinally (body finally) (CTryFinally (desug body scope) (desug finally scope))]
+    [PyTryExcept (body handlers pelse)
+                 (let ((c-body (desug body scope))
+                       (c-else (desug pelse scope))
+                       (c-handlers (map (lambda (h) (desug h scope)) handlers)))
+                   (CTryExcept
+                    c-body
+                    (hash (map2 (lambda (x y) (values x y))
+                                (map 
+                                 (lambda (h) (type-case CExp h
+                                               [CExceptHandler (body type name) type]
+                                               [else (some (CError (CStr "Desugar'd PyExceptHandler to non-CExceptHandler")))]))
+                                 c-handlers)
+                                c-handlers))
+                    c-else))]
+    [PyExceptHandler (body type name) 
+                     (CExceptHandler (desug body scope)
+                                     (type-case (optionof PyExpr) type
+                                       [some (v) (some (desug v scope))]
+                                       [none () (none)])
+                                     (type-case (optionof PyExpr) name
+                                       [some (v) (some (desug v scope))]
+                                       [none () (none)]))]
                                                     
                                                           
     ;[else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]

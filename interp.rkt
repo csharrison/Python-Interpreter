@@ -100,6 +100,7 @@
                                               (interp-as env sto ([(key s) k] [(value s2) c])
                                                          (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
+
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
   (type-case CExp expr
     [CNum (n) (ValA (VNum n) store)]
@@ -186,6 +187,44 @@
     [CObject (fields) (iter-hash (get-list fields) empty env store VObject)]
     [CDict (fields) (iter-hash (get-list fields) empty env store VDict)]
     
+    [CTryFinally (body finally) 
+                 (let ((try-val (interp-full body env store))
+                       (fin-val (interp-full finally env store)))
+                   (type-case Ans fin-val
+                     [ValA (f-v s) 
+                           (type-case CVal f-v
+                             [VReturn (some-val) fin-val]
+                             [else try-val])]
+                     [ExnA (vf s) try-val]))]
+    
+    [CTryExcept (body handlermap elsebody) 
+                (let ((vbody (interp-full body env store)))
+                  (type-case Ans vbody
+                    [ValA (v s) (interp-full elsebody env s)]
+                    [ExnA (exnobj s) 
+                          (type-case CVal exnobj
+                            [VObject (fields)
+                                     (type-case (optionof CVal) (hash-ref fields (VStr "__type__"))
+                                       [some (vtype) 
+                                             (type-case (optionof CVal) (hash-ref fields (VStr "__exceptiontype__"))
+                                               [some (exntype) 
+                                                     (type-case CVal exntype
+                                                       [VStr (str) 
+                                                             (type-case (optionof CExp) (hash-ref handlermap (some (CId (string->symbol str))))
+                                                               [some (handler) (interp-full handler env s)]
+                                                               [none () 
+                                                                     (type-case (optionof CExp) (hash-ref handlermap (none))
+                                                                       [some (gen-handle) (interp-full gen-handle env s)]
+                                                                       [none () (interp-full elsebody env s)])])]
+                                                       [else (err s "exn type not a string")])]
+                                               [none () (err s "exceptiontype not found in obect")])]
+                                       [none () (err s "object raised not of type exception")])]
+                            [else (begin (display (tagof exnobj)) (interp-full elsebody env s))])]))]
+                                                                          
+    
+    [CExceptHandler (body type name) (interp-full body env store)]
+                
+    
     [CGet (obj field)
           (begin 
             (interp-as env store ([(o s) obj] [(f s2) field])
@@ -271,7 +310,6 @@
                                              s2)]
                           
                           [else (err s2 "comparator not implemented: " (symbol->string op))]))]))
-
 
 (define (interp expr) : CVal
   (begin ;(display expr)
