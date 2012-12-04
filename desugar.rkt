@@ -35,10 +35,11 @@
     [(empty? exprs) (CNone)]
     [(cons? exprs) (CSeq (first exprs) (cascade-seq (rest exprs)))]))
   
-(define (convert-defaults (defs : (listof PyDefault)) scope)
-  (map (lambda (pyd) (CD (PD-id pyd) (desug (PD-val pyd) scope))) defs))
+(define (convert-defaults (defs : (hashof symbol PyExpr)) scope) : (hashof symbol CExp)
+  (hash (map (lambda (pyd)
+           (values pyd (desug (some-v (hash-ref defs pyd)) scope))) (hash-keys defs))))
 
-(define dummy-func (CFunc empty empty (CError (CStr "dummy func"))))
+(define dummy-func (CFunc empty (hash empty) (none) (none) (CError (CStr "dummy func"))))
 
 ;; cascade-lets will build up the nested lets, and use body as the
 ;; eventual body, preserving order of evaluation of the expressions
@@ -76,7 +77,7 @@
                                 [else scope])]
                                 ;[else (begin (error 'desugar "no assign case for non ids") scope)])]
                              [else (begin (error 'desugar "no assign for iterables") scope)])]
-             [PyFunDef (name args defaults body) (modify-scope name scope (if global? 'global 'local))]
+             [PyFunDef (name args defaults s k body) (modify-scope name scope (if global? 'global 'local))]
              [PyClassDef (name base body) (modify-scope name scope (if global? 'global 'local))]
              [PyTryFinally (body finally)
                            (type-case PyExpr body
@@ -119,8 +120,12 @@
                                     (cascade-lets globals 'global (map (lambda (x) (CNotDefined)) globals)
                                                   (desug body scope)))))))
 
-(define (get-args args defaults)
-  (append args (map (lambda (x) (PD-id x)) defaults)))
+(define (get-args args defaults s k)
+  (let ((all (append args (hash-keys defaults))))
+    (cond [(and (some? s) (some? k)) (cons (some-v s) (cons (some-v k) all))]
+          [(some? s) (cons (some-v s) all)]
+          [(some? k) (cons (some-v k) all)]
+          [else all])))
 
 (define (get-scope-type id scope)
   (type-case (optionof symbol) (hash-ref scope id)
@@ -138,7 +143,12 @@
     [PyFalse () (CFalse)]
     [PyNone () (CNone)]
     
-    [PyApp (f args) (CApp (desug f scope) (map (lambda (x) (desug x scope)) args))]
+    [PyApp (f args keys star kwarg) (CApp (desug f scope) 
+                                          (map (lambda (x) (desug x scope)) args)
+                                          (hash (map (lambda (x) (values x (desug (some-v (hash-ref keys x)) scope))) (hash-keys keys)))
+                                          (if (some? star) (some (desug (some-v star) scope)) (none))
+                                          (if (some? kwarg) (some (desug (some-v kwarg) scope)) (none)))]
+                                          
     [PyId (x) ((case (get-scope-type x scope) ('local CId) ('nonlocal CNonLocalId) ('global CGlobalId)) x)]
     [PyGlobal (x) (CGlobalId x)]
     [PyNonLocal (x) (CNonLocalId x)]
@@ -149,6 +159,7 @@
                      (type-case PyExpr (first targets)
                        [PyId (id) (CSet! id (desug value scope) (get-scope-type id scope))]
                        [PyGetAttr (target field) (CSetAttr (desug target scope) (desug field scope ) (desug value scope))]
+                       [PyIndex (target i) (CSetAttr (desug target scope) (desug i scope) (desug value scope))]
                        [else (Err "no assign case yet for ")])]
                     [(cons? (rest targets))
                      (Err "no assign for iterables")])]
@@ -164,16 +175,21 @@
                    [else (Err "no assign case yet for ")])]
     
     [PyPass () (CNone)]
+    [PyDelete (target) (CDelete (desug target scope))]
+    [PyLocals ()
+              (CLet '-locals 'local (CPrim1 'locals (CNone))
+                    (CFunc empty (hash empty) (none) (none)
+                           (CReturn (CId '-locals))))]
+
     
-    
-    
-    [PyFunDef (name args defaults body) 
+    [PyFunDef (name args defaults star kwarg body) 
               (let ((thefun (make-id)))
                 (CSeq (CSet! name dummy-func (get-scope-type name scope))
                       (CLet thefun 'local
                             (CFunc args 
                                    (convert-defaults defaults scope)
-                                   (hoist/desug body (get-args args defaults) false))
+                                   star kwarg
+                                   (hoist/desug body (get-args args defaults star kwarg) false))
                             (CSet! name (CId thefun) (get-scope-type name scope)))))]
     
     [PyReturn (val) (CReturn (desug val scope))]
@@ -182,7 +198,7 @@
                 (local ((define (get-fields (fs :(listof PyExpr))) : (listof (CExp * CExp))
                           (if (empty? fs) empty
                               (type-case PyExpr (first fs)
-                                [PyFunDef (name args defaults body) (cons (values (str name) (desug (PyFun args defaults body) scope)) (get-fields (rest fs)))]
+                                [PyFunDef (name args defaults s k body) (cons (values (str name) (desug (PyFun args defaults s k body) scope)) (get-fields (rest fs)))]
                                 [PyAssign (targets value) 
                                           (cond [(empty? (rest targets))
                                                  (type-case PyExpr (first targets)
@@ -201,29 +217,36 @@
                                                     (values (CStr "__call__")
                                                             (type-case (optionof CExp) (hash-ref hash-fields (CStr "__init__"))
                                                               [some (v) (type-case CExp v
-                                                                          [CFunc (args defaults body)
+                                                                          [CFunc (args defaults s k body)
                                                                                  (let ((theinit (make-id)))
                                                                                    (CLet 'theobj 'local obj
-                                                                                         (CFunc (rest args) defaults
-                                                                                                (CSeq (CApp v (cons (CId 'theobj) (map CId (rest args))))
+                                                                                         (CFunc (rest args) defaults s k
+                                                                                                (CSeq (CApp v (cons (CId 'theobj) (map CId (rest args))) (hash empty) (none) (none))
                                                                                                       (CReturn (CId 'theobj))))))]
                                                                           [else (Err "bad __init__ case")])]
                                                                                                         
-                                                              [none () (CFunc empty empty (CReturn obj))]))))))
+                                                              [none () (CFunc empty (hash empty) (none) (none) (CReturn obj))]))))))
                                (get-scope-type name scope)) (CNone)))]
                  
     
     [PyGetAttr (target attr)
                (let ((t (make-id))
                      (a (make-id))
+                     (tag  (make-id))
                      (result (make-id)))
                  (CLet t 'local (desug target scope)
                        (CLet a 'local (desug attr scope)
                              (CLet result 'local (CGet (CId t) (CId a))
-                                   (CIf (Compare '== (CApp (CId 'tagof) (list (CId result))) (CStr "closure"))
-                                        (CPartialApply (CId result) (CId t));;give the target as first argument
-                                        (CId result))))))]
-    [PyFun (args defaults body) (CFunc args (convert-defaults defaults scope) (desug body scope))]
+                                   (CLet tag 'local (CApp (CId 'tagof) (list (CId result)) (hash empty) (none) (none))
+                                         (CIf (Compare '== (CId tag) (CStr "closure"))
+                                              (CPartialApply (CId result) (CId t));;give the target as first argument
+                                              (CIf (Compare '== (CId tag) (CStr "dict"))
+                                                   (CPartialApply (CId result) (CId t))
+                                                   (CId result))))))))]
+    [PyFun (args defaults star kwarg body) (CFunc args 
+                                                  (convert-defaults defaults scope) 
+                                                  star kwarg
+                                                  (desug body scope))]
     
     [PyOr (exprs)  (foldr (lambda (f rest) 
                             (let ((id (make-id)))
@@ -279,6 +302,8 @@
                                      (type-case (optionof PyExpr) name
                                        [some (v) (some (desug v scope))]
                                        [none () (none)]))]
+    [PySet (elts) (CSet (make-hash (map (lambda (x) (values (desug x scope) (CNone))) elts)))]
+    
                                                     
                                                           
     ;[else (begin (display expr) (CError (CStr "desugar hasn't handled a case yet")))]
