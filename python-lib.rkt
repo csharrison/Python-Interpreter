@@ -79,15 +79,19 @@ ___fail
          (CIf (Compare 'in (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
 (define (exception-lambda [s : string]) : CExp
-  (CFunc (list 'e) (hash empty) (none) (none)
+  (CFunc (list 'self 'e) (hash empty) (none) (none)
          (CReturn (CObject (make-hash (list 
                                        (values (CStr "__type__") (CStr "exception"))
                                        (values (CStr "__class__") (CStr "class"))
                                        (values (CStr "__exceptiontype__") (CStr s))
                                        (values (CStr "__errexp__") (CId 'e))))))))
+(define (exn-class (s : string))
+  (CObject (make-hash (list (values (CStr "__call__")
+                                    (exception-lambda s))
+                            (values (CStr "__exceptionclass__") (CStr s))))))
 
 
-
+#|
 (define assert-raises-lambda
   (CFunc (list 'exc-type 'func) (hash empty) (none) (none)
          (CLet 'fun-call 'local (CApp (CId 'func) empty)
@@ -100,7 +104,7 @@ ___fail
                               (CError (CStr "Assert failed")))
                          (CError (CStr "Assert failed")))
                     (CError (CStr "Assert failed"))))))
-
+|#
 
 (define true-val
   (CTrue))
@@ -135,10 +139,10 @@ ___fail
         (bind '___assertIn assert-in)
         (bind '___assertNotIn assert-notin)
         ;(bind '___assertRaises assert-raises-lambda)
-        (bind 'TypeError (exception-lambda "TypeError"))
-        (bind 'KeyError (exception-lambda "KeyError"))
-        (bind 'RuntimeError (exception-lambda "RuntimeError"))
-        (bind 'IndexError (exception-lambda "IndexError"))))
+        (bind 'TypeError (exn-class "TypeError"))
+        (bind 'KeyError (exn-class "KeyError"))
+        (bind 'RuntimeError (exn-class "RuntimeError"))
+        (bind 'IndexError (exn-class "IndexError"))))
 
 
 (define (python-lib expr)

@@ -451,5 +451,11 @@
     (set! globals (hash empty))
     (type-case Ans (interp-full expr (Ev (hash empty) (hash empty)) (hash empty))
       [ValA (v s) v]
-      [ExnA (v s) (begin (error 'interp-derp (pretty v)) v)])))
+      [ExnA (v s) (type-case CVal v
+                    [VObject (elts) (type-case (optionof CVal) (hash-ref elts (VStr "__exceptiontype__"))
+                                      [some (t) (type-case (optionof CVal) (hash-ref elts (VStr "__errexp__"))
+                                                  [some (errmessage) (begin (error 'interp (pretty errmessage)) v)]
+                                                  [none () (error 'interp  "exception must have value __errexp__")])]
+                                      [none () (error 'interp "exception must have value __exceptiontype__")])]
+                    [else (error 'interp "exceptions must extend the base type exception")])])))
 
