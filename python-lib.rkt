@@ -129,7 +129,6 @@ ___fail
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))
         (bind 'True true-val); we do this at parse time, which i think is better
-        (bind 'Exception (exception-lambda "Exception"))
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-is)
         (bind '___assertIsNot assert-isnot)
@@ -139,6 +138,7 @@ ___fail
         (bind '___assertIn assert-in)
         (bind '___assertNotIn assert-notin)
         ;(bind '___assertRaises assert-raises-lambda)
+        (bind 'Exception (exn-class "Exception"))
         (bind 'TypeError (exn-class "TypeError"))
         (bind 'KeyError (exn-class "KeyError"))
         (bind 'RuntimeError (exn-class "RuntimeError"))
