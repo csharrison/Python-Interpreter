@@ -79,7 +79,7 @@ ___fail
          (CIf (Compare 'in (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert failed")))))
 (define (exception-lambda [s : string]) : CExp
-  (CFunc (list 'e) empty
+  (CFunc (list 'e) (hash empty) (none) (none)
          (CReturn (CObject (make-hash (list 
                                        (values (CStr "__type__") (CStr "exception"))
                                        (values (CStr "__class__") (CStr "class"))
@@ -87,9 +87,9 @@ ___fail
                                        (values (CStr "__errexp__") (CId 'e))))))))
 
 
-#|
+
 (define assert-raises-lambda
-  (CFunc (list 'exc-type 'func) empty
+  (CFunc (list 'exc-type 'func) (hash empty) (none) (none)
          (CLet 'fun-call 'local (CApp (CId 'func) empty)
                (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'fun-call))) (CStr "object"))
                     (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__type__")) (CStr "exception"))
@@ -101,7 +101,7 @@ ___fail
                          (CError (CStr "Assert failed")))
                     (CError (CStr "Assert failed"))))))
 
-|#
+
 (define true-val
   (CTrue))
 
