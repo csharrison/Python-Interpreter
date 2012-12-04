@@ -349,25 +349,30 @@
                                       [else (err s3 "cannot reference object with " (pretty f))])]
                            [VDict (elts) (begin (hash-set! elts f v) (ValA o s3))]
                            [else (err s3 "cannot access field of " (pretty o))]))]
-    [CApp (fun args keys star kwarg)
-          (interp-as env store ([(clos s) fun])
-                     (type-case CVal clos
-                       [VClosure (clo-env ids defaults star kwarg body)
-                                 (Apply args keys env s clos)]
-                       [VObject (fields)
-                                (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
-                                  [some (v) (type-case CVal v
-                                              [VClosure (clo-env ids defaults star kwarg body)
-                                                        (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
-                                                                         [some (st) (type-case CVal st
-                                                                                      [VStr (class) (if (string=? class "class") args (cons fun args))]
-                                                                                      [else (cons fun args)])]
-                                                                         [none () (cons fun args)])))
-                                                          (Apply newargs keys env s v))]                                                       
-                                              [else (err s "cannot call the object")])]
-                                  [none () (err s "object does not have a __call__ attr")])]
-                       
-                       [else (err s "Not a closure at application: " (pretty clos))]))]
+    [CApp (fun args keys app-star app-kwarg)
+          (let ((args (type-case (optionof CExp) app-star
+                       [some (a-star) (type-case CExp a-star
+                                        [CList (m l) (append args l)]
+                                        [else (error 'dont-do-this "non list in star args")])]
+                       [none () args])))
+            (interp-as env store ([(clos s) fun])
+                       (type-case CVal clos
+                         [VClosure (clo-env ids defaults star kwarg body)
+                                   (Apply args keys env s clos)]
+                         [VObject (fields)
+                                  (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
+                                    [some (v) (type-case CVal v
+                                                [VClosure (clo-env ids defaults star kwarg body)
+                                                          (let ((newargs (type-case (optionof CVal) (hash-ref fields (VStr "__class__"))
+                                                                           [some (st) (type-case CVal st
+                                                                                        [VStr (class) (if (string=? class "class") args (cons fun args))]
+                                                                                        [else (cons fun args)])]
+                                                                           [none () (cons fun args)])))
+                                                            (Apply newargs keys env s v))]                                                       
+                                                [else (err s "cannot call the object")])]
+                                    [none () (err s "object does not have a __call__ attr")])]
+                         
+                         [else (err s "Not a closure at application: " (pretty clos))])))]
 ;;INVARIANT: fun + arg must be ids
     [CPartialApply (fun arg)
                    (interp-as env store ([(clos s) fun] [(a s2) arg])
@@ -393,9 +398,9 @@
                        (cond [(and (VNum? l) (VNum? r))
                               (let ((nl (VNum-n l)) (nr (VNum-n r)))
                                 (case op
-                                  [(/ //) (if (zero? nr) (err s2 "divide by zero!")
-                                              (ValA (VNum ((case op ['/ /] ['// (lambda (x y) (floor (/ x y)))]) nl nr)) s2))]
-                                  [else (ValA (VNum ((case op ['+ +] ['- -] ['* *] ['% remainder] ['** expt]) nl nr)) s2)]))]
+                                  [(/ // %) (if (zero? nr) (interp-full (CError (CApp (CId 'ZeroDivisionError) (list (CStr "divided by zero yo")) (hash empty) (none) (none))) env s2)
+                                              (ValA (VNum ((case op ['% remainder] ['/ /] ['// (lambda (x y) (floor (/ x y)))]) nl nr)) s2))]
+                                  [else (ValA (VNum ((case op ['+ +] ['- -] ['* *] ['** expt]) nl nr)) s2)]))]
                              [(and (VStr? l) (VStr? r))
                               (case op
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]

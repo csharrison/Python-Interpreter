@@ -10,14 +10,6 @@ desugared expressions in an environment that will contain useful
 bindings.  For example, this sample library binds `print` to a function
 that calls the primitive `print`.
 
-
-we need to define: 
-___assertIn
-___assertNotIn
-___assertRaises
-___assertIs
-___fail
-
 |#
 
 (define-type-alias Lib (CExp -> CExp))
@@ -93,17 +85,13 @@ ___fail
 
 #|
 (define assert-raises-lambda
-  (CFunc (list 'exc-type 'func) (hash empty) (none) (none)
-         (CLet 'fun-call 'local (CApp (CId 'func) empty)
-               (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'fun-call))) (CStr "object"))
-                    (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__type__")) (CStr "exception"))
-                         (CIf (Compare '== 
-                                       (CGet (CId 'fun-call) (CStr "__exceptiontype__")) 
-                                       (CGet (CId 'exc-type) (CStr "__exceptiontype__")))
-                              (CTrue)
-                              (CError (CStr "Assert failed")))
-                         (CError (CStr "Assert failed")))
-                    (CError (CStr "Assert failed"))))))
+  (CFunc (list 'exc-class 'func) (hash empty) (some 'args) (none)
+         (CSeq (CTryExcept (CApp (CId 'func) empty (hash empty) (some (CId 'args)) (none))
+                           (list (CExceptHandler (CReturn (CNone));body
+                                                 (some (CId 'exc-class));type
+                                                 (some (CId 'e))));name
+                           (CError (CStr "Assert failed")))
+               (CError (CStr "Asser failed")))))
 |#
 
 (define true-val
@@ -141,6 +129,7 @@ ___fail
         (bind 'Exception (exn-class "Exception"))
         (bind 'TypeError (exn-class "TypeError"))
         (bind 'KeyError (exn-class "KeyError"))
+        (bind 'ZeroDivisionError (exn-class "ZeroDivisionError"))
         (bind 'RuntimeError (exn-class "RuntimeError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
