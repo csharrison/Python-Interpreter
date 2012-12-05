@@ -16,7 +16,10 @@ def test(x,y,z):
 	print(y)
 	print(z)
 
+a = (1,2,3)
 test(1,2,3)
 test(1,*(2,3))
-test(*(1,2,3))
+test(*a)
 test(1,2,*(3,))
+
+test(1,2,3,*())

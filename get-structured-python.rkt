@@ -28,7 +28,16 @@ structure that you define in python-syntax.rkt
                  ('keys keys)
                  ('values vals))
      (PyDict (map get-structure keys) (map get-structure vals))]
-
+    [(hash-table ('nodetype "GeneratorExp")
+                 ('elt elt)
+                 ('generators gens))
+     
+     (match (first gens)
+       [(hash-table ('nodetype "comprehension")
+                    ('iter iter)
+                    ('target target)
+                    ('ifs ifs))
+        (PyGen (get-structure elt) (get-structure target) (get-structure iter))])]
     [(hash-table ('nodetype "ClassDef")
                  ('name name)
                  ('bases bases)

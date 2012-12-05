@@ -10,14 +10,6 @@ desugared expressions in an environment that will contain useful
 bindings.  For example, this sample library binds `print` to a function
 that calls the primitive `print`.
 
-
-we need to define: 
-___assertIn
-___assertNotIn
-___assertRaises
-___assertIs
-___fail
-
 |#
 
 (define-type-alias Lib (CExp -> CExp))
@@ -98,21 +90,20 @@ ___fail
                                     (exception-lambda s))
                             (values (CStr "__exceptionclass__") (CStr s))))))
 
+(define fail-lambda
+  (CFunc empty (hash empty) (none) (none)
+         (CError (CStr "Assert failed"))))
 
-#|
+
 (define assert-raises-lambda
-  (CFunc (list 'exc-type 'func) (hash empty) (none) (none)
-         (CLet 'fun-call 'local (CApp (CId 'func) empty)
-               (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'fun-call))) (CStr "object"))
-                    (CIf (Compare '== (CGet (CId 'fun-call) (CStr "__type__")) (CStr "exception"))
-                         (CIf (Compare '== 
-                                       (CGet (CId 'fun-call) (CStr "__exceptiontype__")) 
-                                       (CGet (CId 'exc-type) (CStr "__exceptiontype__")))
-                              (CTrue)
-                              (CError (CStr "Assert failed")))
-                         (CError (CStr "Assert failed")))
-                    (CError (CStr "Assert failed"))))))
-|#
+  (CFunc (list 'exc-class 'func) (hash empty) (some 'args) (none)
+         (CSeq (CTryExcept (CApp (CId 'func) empty (hash empty) (some (CId 'args)) (none))
+                           (list (CExceptHandler (CReturn (CNone));body
+                                                 (some (CId 'exc-class));type
+                                                 (some 'e)));name
+                           (CError (CStr "Assert failed")))
+               (CError (CStr "Assert failed")))))
+
 
 (define true-val
   (CTrue))
@@ -120,8 +111,18 @@ ___fail
 (define-type LibBinding
   [bind (left : symbol) (right : CExp)])
 
+(define our-map
+  (CFunc (list 'func 'lst) (hash empty) (none) (none)
+         (CIf (Compare '== (CApp (CId 'len) (list (CId 'lst)) (hash empty) (none) (none)) (CNum 0)) 
+              (CReturn (CList #t empty)) 
+              (CReturn (CBinOp '+ 
+                               (CList #t (list (CApp (CId 'func) (list (CIndex (CId 'lst) (CNum 0))) (hash empty) (none) (none)))) 
+                               (CApp (CId 'map) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))))))
+
 (define lib-functions
   (list (bind 'print (make-prim 'print))
+        (bind 'any (make-prim 'any))
+        (bind 'all (make-prim 'all))
         (bind 'tagof (make-prim 'tag))
         (bind 'callable (make-prim 'callable))
         (bind 'min (make-prim 'min))
@@ -136,6 +137,7 @@ ___fail
         (bind 'int (constructor 'int))
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))
+        (bind 'map our-map)
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-is)
@@ -145,10 +147,12 @@ ___fail
         (bind '___assertFalse assert-false-lambda)
         (bind '___assertIn assert-in)
         (bind '___assertNotIn assert-notin)
-        ;(bind '___assertRaises assert-raises-lambda)
+        (bind '___fail fail-lambda)
+        (bind '___assertRaises assert-raises-lambda)
         (bind 'Exception (exn-class "Exception"))
         (bind 'TypeError (exn-class "TypeError"))
         (bind 'KeyError (exn-class "KeyError"))
+        (bind 'ZeroDivisionError (exn-class "ZeroDivisionError"))
         (bind 'RuntimeError (exn-class "RuntimeError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
