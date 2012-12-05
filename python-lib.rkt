@@ -86,16 +86,16 @@ that calls the primitive `print`.
   (CFunc empty (hash empty) (none) (none)
          (CError (CStr "Assert failed"))))
 
-#|
+
 (define assert-raises-lambda
   (CFunc (list 'exc-class 'func) (hash empty) (some 'args) (none)
          (CSeq (CTryExcept (CApp (CId 'func) empty (hash empty) (some (CId 'args)) (none))
                            (list (CExceptHandler (CReturn (CNone));body
                                                  (some (CId 'exc-class));type
-                                                 (some (CId 'e))));name
+                                                 (some 'e)));name
                            (CError (CStr "Assert failed")))
-               (CError (CStr "Asser failed")))))
-|#
+               (CError (CStr "Assert failed")))))
+
 
 (define true-val
   (CTrue))
@@ -140,7 +140,7 @@ that calls the primitive `print`.
         (bind '___assertIn assert-in)
         (bind '___assertNotIn assert-notin)
         (bind '___fail fail-lambda)
-        ;(bind '___assertRaises assert-raises-lambda)
+        (bind '___assertRaises assert-raises-lambda)
         (bind 'Exception (exn-class "Exception"))
         (bind 'TypeError (exn-class "TypeError"))
         (bind 'KeyError (exn-class "KeyError"))

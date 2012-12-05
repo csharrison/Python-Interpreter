@@ -136,17 +136,17 @@
                                                                              
      
 ;;apply the other reverse~
-(define (Apply (vals : (listof CExp)) (keys : (hashof symbol CExp)) (caller-env : Env) (sto : Store) closure) : Ans
+(define (Apply (vals : (listof CExp)) (keys : (hashof symbol CExp)) (caller-env : Env) (sto : Store) closure stararg) : Ans
   (type-case Ans (iter-lst vals empty caller-env sto false)
     [ValA (v s) 
           (type-case CVal v
             [VList (m ordered) 
-                   (type-case Ans (iter-lst (get-vals keys) empty caller-env sto false)
+                   (type-case Ans (iter-lst (get-vals keys) empty caller-env s false)
                      [ValA (key-vals s) 
                            (type-case CVal key-vals
                              [VList (m key-lst)
                                     (let ((key-dict (hash (val-lst (hash-keys keys) (reverse key-lst)))))
-                                      (apply-it (reverse ordered) key-dict closure s))]
+                                      (apply-it (append (reverse ordered) (if (VList? stararg) (VList-elts stararg) empty)) key-dict closure s))]
                              [else (error 'interp "shouldnt get here")])]
                      [ExnA (v s) (ExnA v s)])]
             [else (error 'interp "shouldn't get here")])]
@@ -245,7 +245,9 @@
     
     [CId (x) (begin ;(display (string-append "  env pre lookup of " (symbol->string x))) (display env) (display " ") (display (Ev-locals env)) (display (hash-keys (Ev-locals env))) (display (hash-ref (Ev-locals env) x))  (display "\n\n")
          (type-case (optionof Location) (lookup x env 'local)
-           [some (loc) (ValA (some-v (hash-ref store loc)) store)]
+           [some (loc) (type-case (optionof CVal) (hash-ref store loc)
+                         [some (gotit) (ValA gotit store)]
+                         [none () (error 'interp (string-append "value in environment not in store: " (symbol->string x)))])]
            [none () (type-case (optionof CVal) (hash-ref globals x)
                       [some (v) (ValA v store)]
                       [none () (err store "identifier not found " (symbol->string x))])]))]
@@ -385,15 +387,10 @@
                            [VDict (elts) (begin (hash-set! elts f v) (ValA o s3))]
                            [else (err s3 "cannot access field of " (pretty o))]))]
     [CApp (fun args keys app-star app-kwarg)
-          (let ((args (type-case (optionof CExp) app-star
-                       [some (a-star) (type-case CExp a-star
-                                        [CList (m l) (append args l)]
-                                        [else (error 'dont-do-this "non list in star args")])]
-                       [none () args])))
-            (interp-as env store ([(clos s) fun])
+            (interp-as env store ([(clos s) fun] [(star-arg s2) (if (some? app-star) (some-v app-star) (CNone))])
                        (type-case CVal clos
                          [VClosure (clo-env ids defaults star kwarg body)
-                                   (Apply args keys env s clos)]
+                                   (Apply args keys env s clos star-arg)]
                          [VObject (fields)
                                   (type-case (optionof CVal) (hash-ref fields (VStr "__call__"))
                                     [some (v) (type-case CVal v
@@ -403,11 +400,11 @@
                                                                                         [VStr (class) (if (string=? class "class") args (cons fun args))]
                                                                                         [else (cons fun args)])]
                                                                            [none () (cons fun args)])))
-                                                            (Apply newargs keys env s v))]                                                       
+                                                            (Apply newargs keys env s v star-arg))]                                                       
                                                 [else (err s "cannot call the object")])]
                                     [none () (err s "object does not have a __call__ attr")])]
                          
-                         [else (err s "Not a closure at application: " (pretty clos))])))]
+                         [else (err s "Not a closure at application: " (pretty clos))]))]
 ;;INVARIANT: fun + arg must be ids
     [CPartialApply (fun arg)
                    (interp-as env store ([(clos s) fun] [(a s2) arg])
