@@ -469,7 +469,11 @@
     [CPrim1 (prim arg)
             (begin ;(display env) (display "\n") (display store) (display "\n")
             (interp-as env store ([(v s) arg])
-                       (python-prim1 prim v env s)))]
+                       (if (and (symbol=? prim 'list)
+                                (VFilter? v))
+                           (interp-full (VFilter-expr v) (VFilter-env  v) s)
+                           (python-prim1 prim v env s))))]
+    [CFilter (e) (ValA (VFilter e env) store)];suspend
     [Compare (op left right)
              (interp-as env store ([(l s) left] [(r s2) right])
                         (case op

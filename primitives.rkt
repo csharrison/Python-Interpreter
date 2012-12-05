@@ -80,6 +80,10 @@ primitives here.
              [VDict (fields) (type-case (optionof CVal) (hash-ref fields i)
                                [some (v) (ValA v store)]
                                [none () (err store "KeyError" "lookup failed: " (pretty i))])]
+             [VStr (s) 
+                   (type-case CVal i
+                     [VNum (n) (ValA (VStr (nth (str-to-list s) n)) store)]
+                     [else (err store "IndexError" "cant take index of string with non number")])]
              [else (err store "TypeError" "cannot take the index of a non-list")])))
 
 (define (slice (lst : CVal) (lower : CVal) (upper : CVal) (step : CVal) (sto : Store))
@@ -114,6 +118,7 @@ primitives here.
     [VObject (fields) (VTrue)]
     [VDict (fields) (VBool (not (empty? (hash-keys fields))))]
     [VSet (elts) (VBool (not (empty? (hash-keys elts))))]
+    [VFilter (f e) (VTrue)]
     [VReturn (val) (BoolEval val)]))
 
 (define (num-of type (val : CVal) store)
@@ -132,6 +137,7 @@ primitives here.
     [VNone () "None"]
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs s k body) "(closure ...)"]
+    [VFilter (f e) "filter"]
     [VObject (fields) (string-join  (list "Object : {" (string-join (map (lambda (k)
                                                                 (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
     [VDict (fields) (string-join  (list "{" (string-join (map (lambda (k)
@@ -164,6 +170,7 @@ primitives here.
     [VObject (fields) "object"]
     [VDict (fields) "dict"]
     [VSet (elts) "set"]
+    [VFilter (f e) "filter"]
     [VReturn (val) "return"]))
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))

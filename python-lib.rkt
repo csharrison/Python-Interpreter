@@ -125,6 +125,24 @@ that calls the primitive `print`.
                                (CList #t (list (CApp (CId 'func) (list (CIndex (CId 'lst) (CNum 0))) (hash empty) (none) (none)))) 
                                (CApp (CId 'map) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))))))
 
+(define our-filter
+  (CFunc (list 'func 'lst) (hash empty) (none) (none)
+         (CIf (Compare '== (CApp (CId 'len) (list (CId 'lst)) (hash empty) (none) (none)) (CNum 0)) 
+              (CReturn (CList #t empty)) 
+              (CReturn
+               (CIf (Compare '== (CApp (CId 'tagof) (list (CId 'func)) (hash empty) (none) (none)) (CStr "None"))
+                    (CIf (CIndex (CId 'lst) (CNum 0))
+                         (CBinOp '+ 
+                                 (CList #t (list (CIndex (CId 'lst) (CNum 0))))
+                                 (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))
+                         (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))
+                    (CIf (CApp (CId 'func) (list (CIndex (CId 'lst) (CNum 0))) (hash empty) (none) (none))
+                         (CBinOp '+ 
+                                 (CList #t (list (CIndex (CId 'lst) (CNum 0))))
+                                 (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))
+                         (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none))))))))
+  
+
 (define lib-functions
   (list (bind 'print (make-prim 'print))
         (bind 'range (make-prim 'range))
@@ -145,6 +163,8 @@ that calls the primitive `print`.
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))
         (bind 'map our-map)
+        (bind 'reg-filter our-filter)
+        (bind 'filter (CFunc (list 'func 'iter) (hash empty) (none) (none) (CReturn (CFilter (CApp (CId 'reg-filter) (list (CId 'func) (CId 'iter)) (hash empty) (none) (none))))))
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-is)

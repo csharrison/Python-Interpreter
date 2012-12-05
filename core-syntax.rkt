@@ -31,7 +31,7 @@ containers: dict, (set)
   [CIndex (lst : CExp) (i : CExp)]
   
   [CError (e1 : CExp)]
-  
+  [CFilter (expr : CExp)]
   [CIf (test : CExp) (then : CExp) (else : CExp)]
   [CUnary (op : symbol) (expr : CExp)];+,-,~,not
   
@@ -79,6 +79,7 @@ containers: dict, (set)
   [VObject (fields : (hashof CVal CVal))];mutable hash (MAKE VOBJECTS HAVE HASHES)
   [VDict (fields : (hashof CVal CVal))]
   [VSet (elts : (hashof CVal CVal))];CVal VNone
+  [VFilter (expr : CExp) (env : Env)]
   [VNotDefined])
 
 
