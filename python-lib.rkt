@@ -82,6 +82,9 @@ that calls the primitive `print`.
                                     (exception-lambda s))
                             (values (CStr "__exceptionclass__") (CStr s))))))
 
+(define fail-lambda
+  (CFunc empty (hash empty) (none) (none)
+         (CError (CStr "Assert failed"))))
 
 #|
 (define assert-raises-lambda
@@ -125,6 +128,7 @@ that calls the primitive `print`.
         (bind '___assertFalse assert-false-lambda)
         (bind '___assertIn assert-in)
         (bind '___assertNotIn assert-notin)
+        (bind '___fail fail-lambda)
         ;(bind '___assertRaises assert-raises-lambda)
         (bind 'Exception (exn-class "Exception"))
         (bind 'TypeError (exn-class "TypeError"))

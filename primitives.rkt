@@ -171,7 +171,8 @@ primitives here.
 (define (to-list arg mutable store)
   (type-case CVal arg
     [VList (m elts) 
-           (if (eq? m mutable) (ValA arg store)
+           (if (and (eq? m mutable) (eq? m false))
+               (ValA arg store)
                (ValA (VList mutable elts) store))]
     [VStr (s) (ValA (VList mutable (map VStr (str-to-list s))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
