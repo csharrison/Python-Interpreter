@@ -142,9 +142,18 @@ that calls the primitive `print`.
                                  (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))
                          (CApp (CId 'reg-filter) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none))))))))
   
+(define isinstance
+  (CFunc (list 'instance 'class) (hash empty) (none) (none)
+         (CReturn (CBinOp 'isinstance (CId 'instance) (CId 'class)))))
+(define bool
+  (CObject (make-hash (list 
+                       (values (CStr "__class__") (CStr "class"))
+                       (values (CStr "__name__") (CStr "bool"))
+                       (values (CStr "__call__") (constructor 'bool))))))
 
 (define lib-functions
   (list (bind 'print (make-prim 'print))
+        (bind 'isinstance isinstance)
         (bind 'range (make-prim 'range))
         (bind 'any (make-prim 'any))
         (bind 'all (make-prim 'all))
@@ -158,7 +167,7 @@ that calls the primitive `print`.
         (bind 'tuple (constructor 'tuple))
         (bind 'set (constructor 'set))
         (bind 'str (constructor 'str))
-        (bind 'bool (constructor 'bool))
+        (bind 'bool bool)
         (bind 'int (constructor 'int))
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))

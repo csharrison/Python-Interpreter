@@ -462,9 +462,14 @@
                               (case op ['* (ValA (VStr (str-mult (VStr-s l) (VNum-n r))) s2)])]
                              [(and (VStr? r) (VNum? l))
                               (case op ['* (ValA (VStr (str-mult (VStr-s r) (VNum-n l))) s2)])]
- 
                               
-                             [else (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
+                             [else 
+                              (if (and (symbol=? op 'isinstance) (VObject? r))
+                                  (type-case CVal l
+                                    [VStr (s) (ValA (VFalse) s2)]
+                                    [VObject (fields) (ValA (VTrue) s2)]
+                                    [else (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])
+                                  (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) ))])))]
     
     [CPrim1 (prim arg)
             (begin ;(display env) (display "\n") (display store) (display "\n")

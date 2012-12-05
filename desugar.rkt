@@ -214,6 +214,7 @@
                                      (make-hash 
                                       (append fields
                                               (list (values (CStr "__class__") (CStr "class"))
+                                                    (values (CStr "__name__") (CStr (symbol->string name)))
                                                     (values (CStr "__call__")
                                                             (type-case (optionof CExp) (hash-ref hash-fields (CStr "__init__"))
                                                               [some (v) (type-case CExp v
