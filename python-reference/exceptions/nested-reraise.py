@@ -1,5 +1,5 @@
 def nested_reraise():
-    raise
+    raise 5
 def reraise():
     try:
         raise TypeError("foo")

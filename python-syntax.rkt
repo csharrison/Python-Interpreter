@@ -52,7 +52,7 @@
  
   [PyTryFinally (body : PyExpr) (finallyBody : PyExpr)]
   [PyTryExcept (body : PyExpr) (handlers : (listof PyExpr)) (else : PyExpr)]
-  [PyExceptHandler (body : PyExpr) (type : (optionof PyExpr)) (name : (optionof PyExpr))]
+  [PyExceptHandler (body : PyExpr) (type : (optionof PyExpr)) (name : (optionof symbol))]
   [PyLocals]
   [PyNotImplemented]
   [PyRaise (e1 : PyExpr)])

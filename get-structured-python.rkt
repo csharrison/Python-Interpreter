@@ -205,7 +205,7 @@ structure that you define in python-syntax.rkt
                  ('body body))
      (PyExceptHandler (PySeq (map get-structure body)) 
                       (if (eq? type #\nul) (None) (Some (get-structure type))) 
-                      (if (eq? name #\nul) (None) (Some (get-structure name))))]
+                      (if (eq? name #\nul) (None) (Some (string->symbol name))))]
                
     
     [(hash-table ('nodetype "If")
