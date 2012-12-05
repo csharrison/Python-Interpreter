@@ -208,6 +208,10 @@ primitives here.
     [VList (m l) (ValA (VBool (foldl (lambda (x r) (or (VTrue? (BoolEval x)) r)) false l)) store)]
     [else (err store "TypeError" "any takes a list")]))
 
+(define (my-range arg store)
+  (type-case CVal arg
+    [VNum (n) (ValA (VList true (build-list n (lambda (x) (VNum x)))) store)]
+    [else (err store "TypeError" "range takes only numbers")]))
 (define (python-prim1 (op : symbol) (arg : CVal) env store) : Ans
   (begin 
   (case op
@@ -225,5 +229,6 @@ primitives here.
     [(min max) (str-op op arg store)]
     [(all) (all arg store)]
     [(any) (any arg store)]
+    [(range) (my-range arg store)]
     [(items clear values keys) (dict-method op arg store)])))
 

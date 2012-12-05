@@ -18,8 +18,15 @@ def f(x):
 
 d = f(2)(4)
 print(d)
-print("d should have h")
-___assertIn('h', d)
 
-del d['h']
-print(d)
+
+
+def f(x):
+    def g(y):
+        def h(z):
+            x + y + z
+            return locals()
+        return h
+    return g
+
+print(f(1)(2)(3))

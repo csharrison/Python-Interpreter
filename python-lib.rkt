@@ -127,6 +127,7 @@ that calls the primitive `print`.
 
 (define lib-functions
   (list (bind 'print (make-prim 'print))
+        (bind 'range (make-prim 'range))
         (bind 'any (make-prim 'any))
         (bind 'all (make-prim 'all))
         (bind 'tagof (make-prim 'tag))
@@ -161,6 +162,7 @@ that calls the primitive `print`.
         (bind 'ZeroDivisionError (exn-class "ZeroDivisionError"))
         (bind 'RuntimeError (exn-class "RuntimeError"))
         (bind 'AttributeError (exn-class "AttributeError"))
+        (bind 'UnboundLocalError (exn-class "UnboundLocalError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
 
