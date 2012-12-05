@@ -112,6 +112,7 @@ primitives here.
     [VStr (s) (VBool (not (string=? "" s)))]
     [VTrue () (VTrue)]
     [VFalse () (VFalse)]
+    [VRange (s st step) (VTrue)]
     [VNone () (VFalse)]
     [VClosure (e args defs s k b) (VTrue)]
     [VNotDefined () (VFalse)]
@@ -135,6 +136,7 @@ primitives here.
     [VTrue () "True"]
     [VFalse () "False"]
     [VNone () "None"]
+    [VRange (s e step) (foldr string-append "" (list "range(" (pretty s) " " (pretty e) " " (pretty step) ")"))]
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs s k body) "(closure ...)"]
     [VFilter (f e) "filter"]
@@ -171,6 +173,7 @@ primitives here.
     [VDict (fields) "dict"]
     [VSet (elts) "set"]
     [VFilter (f e) "filter"]
+    [VRange (s e p) "range"]
     [VReturn (val) "return"]))
 (define (print arg)
   (begin (display (pretty arg)) (display "\n")))

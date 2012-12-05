@@ -292,6 +292,9 @@
                                           [(cons? cvals) (interp-as env sto ([(v s) (first cvals)])
                                                                     (iter (rest cvals) (cons v vals) s))])))
                             (iter elts empty store))]
+    [CRange (start end step)
+            (interp-as env store ([(sta s) start] [(en s2) end] [(st s3) step])
+                       (ValA (VRange sta en st) s3))]
     [CSlice (l low up st)
             (interp-as env store ([(lst s) l] [(lower s2) low] [(upper s3) up] [(step s4) st])
                        (slice lst lower upper step s4))]
