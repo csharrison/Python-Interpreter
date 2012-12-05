@@ -77,6 +77,14 @@ that calls the primitive `print`.
                                        (values (CStr "__class__") (CStr "class"))
                                        (values (CStr "__exceptiontype__") (CStr s))
                                        (values (CStr "__errexp__") (CId 'e))))))))
+
+(define (make-exn [type : string] [msg : string]) : CVal
+  (VObject (make-hash (list 
+                       (values (VStr "__type__") (VStr "exception"))
+                       (values (VStr "__class__") (VStr "class"))
+                       (values (VStr "__exceptiontype__") (VStr type))
+                       (values (VStr "__errexp__") (VStr msg))))))
+
 (define (exn-class (s : string))
   (CObject (make-hash (list (values (CStr "__call__")
                                     (exception-lambda s))
