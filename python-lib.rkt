@@ -48,28 +48,28 @@ that calls the primitive `print`.
 (define assert-equal-lambda
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare '== (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert equal failed")))))
 (define assert-not-equal-lambda
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare '!= (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert not equal failed")))))
 (define assert-is
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'is (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert is failed")))))
 (define assert-isnot
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'isnot (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert is not failed")))))
 (define assert-notin
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'notin (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert not in failed")))))
 
 (define assert-in
   (CFunc (list 'first-elt 'second-elt) (hash empty) (none) (none)
          (CIf (Compare 'in (CId 'first-elt) (CId 'second-elt)) (CTrue)
-              (CError (CStr "Assert failed")))))
+              (CError (CStr "Assert in failed")))))
 (define (exception-lambda [s : string]) : CExp
   (CFunc (list 'self 'e) (hash empty) (none) (none)
          (CReturn (CObject (make-hash (list 
@@ -84,7 +84,7 @@ that calls the primitive `print`.
 
 (define fail-lambda
   (CFunc empty (hash empty) (none) (none)
-         (CError (CStr "Assert failed"))))
+         (CError (CStr "Assert (__fail) failed"))))
 
 
 (define assert-raises-lambda
@@ -93,8 +93,8 @@ that calls the primitive `print`.
                            (list (CExceptHandler (CReturn (CNone));body
                                                  (some (CId 'exc-class));type
                                                  (some 'e)));name
-                           (CError (CStr "Assert failed")))
-               (CError (CStr "Assert failed")))))
+                           (CError (CStr "Assert raises failed")))
+               (CError (CStr "Assert raises failed")))))
 
 
 (define true-val
