@@ -21,12 +21,6 @@
   (cond [(zero? n) empty]
         [else (append lst (append-n lst (- n 1)))]))
 
-;;err : calls an error with all input strings appended
-(define-syntax err
-  (syntax-rules ()
-    [(err store s) (ExnA (make-exn "Exception" s) store)]
-    [(err store type s) (ExnA (make-exn type s) store)]
-    [(err store s ...) (ExnA (make-exn "Exception" (foldr string-append "" (list s ...))) store)]))
 
 (define-syntax interp-as
   (syntax-rules ()
@@ -113,7 +107,7 @@
                                                 (define op (hash-ref val-hash k)))
                                           (cond [(some? op) (if default?
                                                                 (add-keys (rest ks) default?)
-                                                                (some (err store "identifier already bound: " (symbol->string k))))]
+                                                                (some (err store "TypeError" "identifier already bound: " (symbol->string k))))]
                                                 [else (begin (hash-set! val-hash k v) (add-keys (rest ks) default?))]))])))
                          (type-case (optionof Ans) (add-keys (get-val-lst keys) false)
                            [some (v) v]
@@ -131,10 +125,12 @@
                                                             [(cons? ks) (local ((define-values (k v) (first ks))
                                                                                 (define-values (newe news) (update-env-store k v this-env this-store 'local)))
                                                                           (add-to-env (rest ks) newe news))])))
-                                              (if (< (length (hash-keys val-hash)) (length ids))
-                                                  (err store "arity mismatch")
-                                                  (add-to-env (get-val-lst val-hash) env store)))])]))))]
-    [else (err store "non closure at application")]))
+                                              (if (or (< (length (hash-keys val-hash)) (length ids))
+                                                      (and (none? star) (> (length ordered) (length ids))))
+                                                  (err store "TypeError" "arity mismatch")
+                                                  (begin 
+                                                  (add-to-env (get-val-lst val-hash) env store))))])]))))]
+    [else (err store "TypeError" "non closure at application")]))
                                                                              
      
 ;;apply the other reverse~
@@ -233,10 +229,10 @@
                          [else (type-case CVal v
                                  [VNum (n) (case op
                                              ['+ (ValA v s)] ['- (ValA (VNum (- 0 n)) s)] 
-                                             [else (err s "not defined on numbers: " (symbol->string op))])]
+                                             [else (err s "TypeError" "not defined on numbers: " (symbol->string op))])]
                                  [VTrue () (ValA (VNum (case op ['+ 1] ['- -1] ['~ -2])) s)]
                                  [VFalse () (ValA (VNum (case op ['~ -1] [else 0])) s)]
-                                 [else (err s "bad operand for unary operation" (symbol->string op))])]))]
+                                 [else (err s  "TypeError" "bad operand for unary operation" (symbol->string op))])]))]
     
     [CError (ex) (type-case Ans (interp-full ex env store)
                    [ValA (v s) (ExnA v s)]
@@ -252,14 +248,14 @@
                          [none () (error 'interp (string-append "value in environment not in store: " (symbol->string x)))])]
            [none () (type-case (optionof CVal) (hash-ref globals x)
                       [some (v) (ValA v store)]
-                      [none () (err store "identifier not found " (symbol->string x))])]))]
+                      [none () (err store "NameError" "identifier not found " (symbol->string x))])]))]
     [CNonLocalId (x)(type-case (optionof Location) (lookup x env 'nonlocal)
                       [some (loc) (ValA (some-v (hash-ref store loc)) store)]
-                      [none () (err store "Unbound identifier: " (symbol->string x))])]
+                      [none () (err store "NameError" "Unbound identifier: " (symbol->string x))])]
     [CGlobalId (x) 
                (type-case (optionof CVal) (hash-ref globals x)
                  [some (v) (ValA v store)]
-                 [none () (err store "Unbound global identifier: " (symbol->string x))])]
+                 [none () (err store "NameError" "Unbound global identifier: " (symbol->string x))])]
     
     [CSet! (id val type) 
            (interp-as env store ([(v s) val])
@@ -267,7 +263,7 @@
                         [(local nonlocal)
                          (type-case (optionof Location) (lookup id env type)
                            [some (loc) (begin (ValA v (hash-set s loc v)))]
-                           [none () (err s "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
+                           [none () (err s "NameError" "CSet!: identifier '" (symbol->string id) "' not found in environment")])]
                         ['global (begin (set! globals (hash-set globals id v)) (ValA v s))]))]
     
     [CLet (x type bind body)
@@ -283,7 +279,7 @@
                                              ['global (begin (if (and (VNotDefined? v) (some? (hash-ref globals x))) 
                                                                  (void) 
                                                                  (set! globals (hash-set globals x v))) (interp-full body env s))]
-                                             ['nonlocal (err s "no binding for nonlocal '" (symbol->string x) "' found")])])])))]
+                                             ['nonlocal (err s "NameError" "no binding for nonlocal '" (symbol->string x) "' found")])])])))]
     
     [CSeq (ex1 ex2) (interp-as env store ([(v1 s1) ex1])
                                (type-case CVal v1
@@ -305,8 +301,8 @@
                                         (type-case CVal lst
                                           [VDict (elts) (begin (hash-remove! elts idex) (ValA lst store))]
                                           ;todo - lists!!!
-                                          [else (err store "bad index syntax")]))]
-               [else (err store "delete only implemented for indexes")])]
+                                          [else (err store "TypeError" "only dicts are subscriptable")]))]
+               [else (err store "TypeError" "delete only implemented for indexes")])]
     
     [CReturn (val) (interp-as env store ([(v s) val])
                               (ValA (VReturn v) s))]
@@ -362,7 +358,7 @@
                          [VObject (fields)
                                   (type-case (optionof CVal) (hash-ref fields f)
                                     [some (v) (ValA v s2)]
-                                    [none () (err s2 "object lookup failed: " (pretty f))])]
+                                    [none () (err s2 "AttributeError" "object lookup failed: " (pretty f))])]
                          [VDict (elts)
                                 (type-case CVal f ;only for dict method (band aid)
                                   [VStr (s) (case (string->symbol s)
@@ -375,9 +371,9 @@
                                                                                  (CReturn (CBinOp (string->symbol s) (CId '-the-dict) (CIndex (CId '-args) (CNum 0))))
                                                                                  (CError (CStr "update takes no more than one arg!")))
                                                                             (CReturn (CId '-the-dict)))) s2)]
-                                              [else (err s2 "dict has not method " s)])]
-                                  [else (err s2 "dict lookup")])]
-                         [else (err s2 (pretty o) " is not an object, failed at lookup")])))]
+                                              [else (err s2 "AttributeError" "dict has not method " s)])]
+                                  [else (err s2 "KeyError" "dict lookup")])]
+                         [else (err s2 "AttributeError" (pretty o) " is has no attributes, failed at lookup")])))]
                          
     [CSetAttr (obj field val)
               (interp-as env store ([(o s) obj] [(f s2) field] [(v s3) val])
@@ -385,9 +381,9 @@
                            [VObject (fields)
                                     (type-case CVal f
                                       [VStr (s) (begin (hash-set! fields f v) (ValA (VNone) s3))]
-                                      [else (err s3 "cannot reference object with " (pretty f))])]
+                                      [else (err s3 "AttributeError" "cannot reference object with " (pretty f))])]
                            [VDict (elts) (begin (hash-set! elts f v) (ValA o s3))]
-                           [else (err s3 "cannot access field of " (pretty o))]))]
+                           [else (err s3 "AttributeError" "cannot access field of " (pretty o))]))]
     [CApp (fun args keys app-star app-kwarg)
             (interp-as env store ([(clos s) fun] [(star-arg s2) (if (some? app-star) (some-v app-star) (CNone))])
                        (type-case CVal clos
@@ -403,10 +399,10 @@
                                                                                         [else (cons fun args)])]
                                                                            [none () (cons fun args)])))
                                                             (Apply newargs keys env s v star-arg))]                                                       
-                                                [else (err s "cannot call the object")])]
-                                    [none () (err s "object does not have a __call__ attr")])]
+                                                [else (err s "TypeError" "cannot call the object")])]
+                                    [none () (err s "TypeError" "object does not have a __call__ attr")])]
                          
-                         [else (err s "Not a closure at application: " (pretty clos))]))]
+                         [else (err s "TypeError" "Not a callable at application: " (pretty clos))]))]
 ;;INVARIANT: fun + arg must be ids
     [CPartialApply (fun arg)
                    (interp-as env store ([(clos s) fun] [(a s2) arg])
@@ -414,7 +410,7 @@
                                 [VClosure (clo-env ids defaults star kwarg body)
                                           (local ((define-values (enew snew) (update-env-store (first ids) a clo-env s 'local)))
                                             (ValA (VClosure enew (rest ids) defaults star kwarg body) snew))]
-                                [else (err s2 "partial application of nonfunction")]))]
+                                [else (err s2 "TypeError" "partial application of nonfunction")]))]
     
     ;;iterate through default arguments
     [CFunc (args defaults star kwarg body)
@@ -438,7 +434,7 @@
                              [(and (VStr? l) (VStr? r))
                               (case op
                                 ['+ (ValA (VStr (s+ (VStr-s l) (VStr-s r))) s2)]
-                                [else (err s2 "invalid operation on strings: " (symbol->string op))])]
+                                [else (err s2 "TypeError" "invalid operation on strings: " (symbol->string op))])]
                              [(and (VList? l) (VList? r) (eq? (VList-mutable r) (VList-mutable l)))
                               (case op
                                 ['+ (ValA (VList (VList-mutable l) (append (VList-elts l) (VList-elts r))) s2)])]
@@ -454,7 +450,7 @@
                               (case op ['* (ValA (VStr (str-mult (VStr-s r) (VNum-n l))) s2)])]
  
                               
-                             [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
+                             [else (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
     
     [CPrim1 (prim arg)
             (begin ;(display env) (display "\n") (display store) (display "\n")
@@ -481,10 +477,10 @@
                                         [VStr (s) 
                                               (type-case CVal l
                                                 [VStr(left) (ValA (VBool ((case op ['in identity] ['notin not]) (str-in s left))) s2)]
-                                                [else (err s2 "cannot find nonstring in string")])]
-                                        [else (err s2 "in not implemented for this type")])]
+                                                [else (err s2 "TypeError" "cannot find nonstring in string")])]
+                                        [else (err s2 "TypeError" "in not implemented for this type")])]
                           
-                          [else (err s2 "comparator not implemented: " (symbol->string op))]))])))
+                          [else (err s2 "TypeError" "comparator not implemented: " (symbol->string op))]))])))
 
 (define (interp expr) : CVal
   (begin ;(display expr)
@@ -494,7 +490,7 @@
       [ExnA (v s) (type-case CVal v
                     [VObject (elts) (type-case (optionof CVal) (hash-ref elts (VStr "__exceptiontype__"))
                                       [some (t) (type-case (optionof CVal) (hash-ref elts (VStr "__errexp__"))
-                                                  [some (errmessage) (begin (error 'interp (pretty errmessage)) v)]
+                                                  [some (errmessage) (begin (error 'interp (string-append (string-append (pretty t) ": ") (pretty errmessage))) v)]
                                                   [none () (error 'interp  "exception must have value __errexp__")])]
                                       [none () (error 'interp "exception must have value __exceptiontype__")])]
                     [VStr (s) (begin (error 'interp-internal s) v)]

@@ -102,7 +102,7 @@ that calls the primitive `print`.
                                                  (some (CId 'exc-class));type
                                                  (some 'e)));name
                            (CError (CStr "Assert raises failed")))
-               (CError (CStr "Assert raises failed")))))
+               (CError (CStr "Assert raises after")))))
 
 
 (define true-val

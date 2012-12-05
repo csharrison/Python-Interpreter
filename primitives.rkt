@@ -1,7 +1,8 @@
 #lang plai-typed
 
 (require "core-syntax.rkt"
-         "methods.rkt")
+         "methods.rkt"
+         "python-lib.rkt")
 #|
 
 Since there may end up being a large number of primitives that you
@@ -23,6 +24,12 @@ primitives here.
                    (string-replace :(string string string -> string))
                    [string-split : (string string -> (listof string))]
                    [range : (number number number -> (listof number))]))
+
+;;err : calls an error with all input strings appended
+(define-syntax err
+  (syntax-rules ()
+    [(err store type s ...) (ExnA (make-exn type (foldr string-append "" (list s ...))) store)]))
+
 (define (valid-index c)
   (or (VNone? c) (VNum? c)))
 
@@ -67,13 +74,13 @@ primitives here.
            (type-case CVal lst
              [VList (m elts) (type-case CVal i
                                [VNum (n) (if (>= n (length elts))
-                                             (ExnA (VStr "list index out of range") store)
+                                             (err store "IndexError" "list index out of range")
                                              (ValA (nth elts n) store))]
-                               [else (ExnA (VStr "indices must be integers!") store)])]
+                               [else (err store "TypeError" "indices must be integers!")])]
              [VDict (fields) (type-case (optionof CVal) (hash-ref fields i)
                                [some (v) (ValA v store)]
-                               [none () (ExnA (VStr (string-append "lookup failed: " (pretty i))) store)])]
-             [else (ExnA (VStr "cannot take the index of a non-list") store)])))
+                               [none () (err store "KeyError" "lookup failed: " (pretty i))])]
+             [else (err store "TypeError" "cannot take the index of a non-list")])))
 
 (define (slice (lst : CVal) (lower : CVal) (upper : CVal) (step : CVal) (sto : Store))
   (if (and (valid-index lower) (valid-index upper) (valid-index step))
@@ -89,8 +96,8 @@ primitives here.
                                          [VList (m l) (ValA (VStr (string-join (map VStr-s l) "")) sto)]
                                          [else (error 'slice "slice returned non-lst")])]
                             [ExnA (v s) (ExnA v s)])]
-              [else (ExnA (VStr "nonlist not subscriptable!") sto)])
-        (ExnA (VStr "list indices must be integers!") sto)))
+              [else (err sto "TypeError" "nonlist not subscriptable!")])
+        (err sto "TypeError" "list indices must be integers!")))
            
 (define (VBool v)
   (if v (VTrue) (VFalse)))
@@ -113,7 +120,7 @@ primitives here.
   (type-case CVal val
     [VTrue () (ValA (VNum (case type [(int abs) 1] ['float 1.0])) store)]
     [VFalse () (ValA (VNum (case type [(int abs) 0] ['float 0.0])) store)]
-    [else (ExnA (VStr "int() argument must be booleans") store)]))
+    [else (err store "TypeError" "int() argument must be booleans")]))
 
 (define (pretty arg)
   (type-case CVal arg
@@ -142,7 +149,7 @@ primitives here.
                                           (first l) max))])))
                       (ValA (VStr (find-extreme lst (case op ['min string<?] ['max string>?]))) store))]
                 
-    [else (ExnA (VStr "min on non-string") store)]))
+    [else (err store "TypeError" "min on non-string")]))
 
 (define (tagof arg)
   (type-case CVal arg
@@ -166,7 +173,7 @@ primitives here.
     [VList (m elts) (ValA (VNum (length elts)) store)]
     [VStr (s) (ValA (VNum (string-length s)) store)]
     [VDict (fields) (ValA (VNum (length (hash-keys fields))) store)]
-    [else (ExnA (VStr (string-append (tagof arg) " has no len()")) store)]))
+    [else (err store "TypeError" (tagof arg) " has no len()")]))
 
 (define (to-list arg mutable store)
   (type-case CVal arg
@@ -177,7 +184,7 @@ primitives here.
     [VStr (s) (ValA (VList mutable (map VStr (str-to-list s))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [VSet (elts) (ValA (VList mutable (hash-keys elts)) store)]
-    [else (ExnA (VStr "cannot call list() on non iterable") store)]))
+    [else (err store "TypeError" "cannot call list() on non iterable")]))
 
 (define (to-set arg store)
   (let ((h (make-hash empty)))
@@ -189,17 +196,17 @@ primitives here.
             (begin
               (map (lambda (x) (hash-set! h x (VNone))) (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s ""))))
               (ValA (VSet h) store))]
-      [else (ExnA (VStr "cannot call set() on non iterable") store)])))
+      [else (err store "TypeError" "cannot call set() on non iterable")])))
 
 (define (all arg store)
   (type-case CVal arg
     [VList (m l) (ValA (VBool (foldl (lambda (x r) (and (VTrue? (BoolEval x)) r)) true l)) store)]
-    [else (ExnA (VStr "all takes a list") store)]))
+    [else (err store "TypeError" "all takes a list")]))
 
 (define (any arg store)
   (type-case CVal arg
     [VList (m l) (ValA (VBool (foldl (lambda (x r) (or (VTrue? (BoolEval x)) r)) false l)) store)]
-    [else (ExnA (VStr "any takes a list") store)]))
+    [else (err store "TypeError" "any takes a list")]))
 
 (define (python-prim1 (op : symbol) (arg : CVal) env store) : Ans
   (begin 
