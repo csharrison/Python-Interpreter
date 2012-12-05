@@ -182,9 +182,38 @@
                          (interp-as env sto ([(key s) k] [(value s2) c])
                                     (iter-hash (rest cvals) (cons (values key value) vals) env s type)))]))
 
+(define (findhandler (exn : CVal) (handlers : (listof CExp)) (catchall : (optionof CExp)) (env : Env) (s : Store)) : (optionof CExp)
+  (cond 
+    [(empty? handlers) catchall]
+    [(cons? handlers) (let ([handler (first handlers)]) 
+                        (type-case CVal exn
+                          [VObject (exn-fields) 
+                                   (type-case (optionof CVal) (hash-ref exn-fields (VStr "__exceptiontype__"))
+                                     [some (given-type-vstr)
+                                           (type-case CExp handler
+                                             [CExceptHandler (body type name) 
+                                                             (type-case (optionof CExp) type
+                                                               [some (type-actual)
+                                                                     (type-case Ans (interp-full type-actual env s)
+                                                                       [ValA (v ns)
+                                                                             (type-case CVal v
+                                                                               [VObject (fields) 
+                                                                                        (type-case (optionof CVal) (hash-ref fields (VStr "__exceptionclass__"))
+                                                                                          [some (e) (if (equal? e given-type-vstr)
+                                                                                                        (some handler)
+                                                                                                        (findhandler exn (rest handlers) catchall env s))]
+                                                                                          [none () (error 'interp-findhandler "handler specified exception must be a class")])]
+                                                                               [else (error 'interp-findhandler "exceptions must be base objects")])]
+                                                                       [else (error 'interp-findhandler-holyshit "HAHAHA")])]
+                                                               [none () (findhandler exn (rest handlers) (some handler) env s)])]
+                                             [else (error 'interp-findhandler "non-CExceptHandler found in handlers list")])]
+                                     [none () (error 'interp-findhandler "exception must have __exceptiontype__ field")])]
+                          [else (error 'interp-findhandler "non obect exception given")]))]))
+                        
+
 
 (define (interp-full (expr : CExp)  (env : Env)  (store : Store)) : Ans
-  (begin ;(display env) (display "\n") (display expr) (display "\n\n\n")
+  (begin ; (display env) (display "\n") (display store) (display "\n") (display expr) (display "\n\n\n")
   (type-case CExp expr
     [CNum (n) (ValA (VNum n) store)]
     [CStr (s) (ValA (VStr s) store)]
@@ -212,12 +241,12 @@
          (interp-as env store ([(v s) i])
                     (interp-full (if (VTrue? (BoolEval v)) then_block else_block) env s))]
     
-    [CId (x)
+    [CId (x) (begin ;(display (string-append "  env pre lookup of " (symbol->string x))) (display env) (display " ") (display (Ev-locals env)) (display (hash-keys (Ev-locals env))) (display (hash-ref (Ev-locals env) x))  (display "\n\n")
          (type-case (optionof Location) (lookup x env 'local)
            [some (loc) (ValA (some-v (hash-ref store loc)) store)]
            [none () (type-case (optionof CVal) (hash-ref globals x)
                       [some (v) (ValA v store)]
-                      [none () (err store "identifier not found " (symbol->string x))])])]
+                      [none () (err store "identifier not found " (symbol->string x))])]))]
     [CNonLocalId (x)(type-case (optionof Location) (lookup x env 'nonlocal)
                       [some (loc) (ValA (some-v (hash-ref store loc)) store)]
                       [none () (err store "Unbound identifier: " (symbol->string x))])]
@@ -288,7 +317,7 @@
                              [else try-val])]
                      [ExnA (vf s) try-val]))]
     
-    [CTryExcept (body handlermap elsebody) 
+    [CTryExcept (body handlers elsebody) 
                 (let ((vbody (interp-full body env store)))
                   (type-case Ans vbody
                     [ValA (v s) (interp-full elsebody env s)]
@@ -296,21 +325,25 @@
                           (type-case CVal exnobj
                             [VObject (fields)
                                      (type-case (optionof CVal) (hash-ref fields (VStr "__type__"))
-                                       [some (vtype) 
-                                             (type-case (optionof CVal) (hash-ref fields (VStr "__exceptiontype__"))
-                                               [some (exntype) 
-                                                     (type-case CVal exntype
-                                                       [VStr (str) 
-                                                             (type-case (optionof CExp) (hash-ref handlermap (some (CId (string->symbol str))))
-                                                               [some (handler) (interp-full handler env s)]
-                                                               [none () 
-                                                                     (type-case (optionof CExp) (hash-ref handlermap (none))
-                                                                       [some (gen-handle) (interp-full gen-handle env s)]
-                                                                       [none () (interp-full elsebody env s)])])]
-                                                       [else (err s "exn type not a string")])]
-                                               [none () (err s "exceptiontype not found in obect")])]
-                                       [none () (err s "object raised not of type exception")])]
-                            [else (begin (display (tagof exnobj)) (interp-full elsebody env s))])]))]
+                                       [some (should-be-exn) 
+                                             (if (equal? should-be-exn (VStr "exception"))
+                                                 (let ([handler-opt (findhandler exnobj handlers (none) env s)])
+                                                   (begin ;(display handler-opt)
+                                                   (type-case (optionof CExp) handler-opt
+                                                     [some (handler)
+                                                           (type-case CExp handler
+                                                             [CExceptHandler (body type name)
+                                                                             (type-case (optionof symbol) name
+                                                                               [some (name-act) 
+                                                                                     (local ((define-values (ne ns) 
+                                                                                               (update-env-store name-act exnobj env s 'local)))
+                                                                                       (interp-full handler ne ns))]
+                                                                               [none () (interp-full handler env s)])]
+                                                             [else (error 'interp "findhandler returned non CExceptHandler, whaa?")])]
+                                                     [none () (interp-full elsebody env s)])))
+                                                 (error 'interp "caught non exception object"))]
+                                       [none () (error 'interp "object caught does not have __type__ field")])]
+                            [else vbody])]))]
                                                                           
     
     [CExceptHandler (body type name) (interp-full body env store)]

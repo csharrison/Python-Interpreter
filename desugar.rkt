@@ -284,24 +284,13 @@
                  (let ((c-body (desug body scope))
                        (c-else (desug pelse scope))
                        (c-handlers (map (lambda (h) (desug h scope)) handlers)))
-                   (CTryExcept
-                    c-body
-                    (hash (map2 (lambda (x y) (values x y))
-                                (map 
-                                 (lambda (h) (type-case CExp h
-                                               [CExceptHandler (body type name) type]
-                                               [else (some (CError (CStr "Desugar'd PyExceptHandler to non-CExceptHandler")))]))
-                                 c-handlers)
-                                c-handlers))
-                    c-else))]
+                   (CTryExcept c-body c-handlers c-else))]
     [PyExceptHandler (body type name) 
                      (CExceptHandler (desug body scope)
                                      (type-case (optionof PyExpr) type
                                        [some (v) (some (desug v scope))]
                                        [none () (none)])
-                                     (type-case (optionof PyExpr) name
-                                       [some (v) (some (desug v scope))]
-                                       [none () (none)]))]
+                                     name)]
     [PySet (elts) (CSet (make-hash (map (lambda (x) (values (desug x scope) (CNone))) elts)))]
     
                                                     
