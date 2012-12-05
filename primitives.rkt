@@ -178,6 +178,7 @@ primitives here.
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [VSet (elts) (ValA (VList mutable (hash-keys elts)) store)]
     [else (ExnA (VStr "cannot call list() on non iterable") store)]))
+
 (define (to-set arg store)
   (let ((h (make-hash empty)))
     (type-case CVal arg
@@ -189,6 +190,16 @@ primitives here.
               (map (lambda (x) (hash-set! h x (VNone))) (map VStr (filter (lambda (x) (not (string=? "" x))) (string-split s ""))))
               (ValA (VSet h) store))]
       [else (ExnA (VStr "cannot call set() on non iterable") store)])))
+
+(define (all arg store)
+  (type-case CVal arg
+    [VList (m l) (ValA (VBool (foldl (lambda (x r) (and (VTrue? (BoolEval x)) r)) true l)) store)]
+    [else (ExnA (VStr "all takes a list") store)]))
+
+(define (any arg store)
+  (type-case CVal arg
+    [VList (m l) (ValA (VBool (foldl (lambda (x r) (or (VTrue? (BoolEval x)) r)) false l)) store)]
+    [else (ExnA (VStr "any takes a list") store)]))
 
 (define (python-prim1 (op : symbol) (arg : CVal) env store) : Ans
   (begin 
@@ -205,5 +216,7 @@ primitives here.
     [(str) (ValA (VStr (pretty arg)) store)]
     [(prim-len) (len arg store)]
     [(min max) (str-op op arg store)]
+    [(all) (all arg store)]
+    [(any) (any arg store)]
     [(items clear values keys) (dict-method op arg store)])))
 

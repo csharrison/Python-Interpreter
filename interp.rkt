@@ -118,7 +118,7 @@
                            [none () (type-case (optionof Ans) (add-keys (get-val-lst defaults) true)
                                       [some (v) (error 'interp "should never get here: default arguemnts")]
                                       [none () ;;add all in val-hash to closures environment
-                                            (local ((define (add-to-env (ks : (listof (symbol * CVal))) this-env this-store)
+                                            (local ((define (add-to-env (ks : (listof (symbol * CVal))) this-env this-store) : Ans
                                                       (cond [(empty? ks)      
                                                              (type-case Ans (interp-full body this-env this-store)
                                                                [ValA (v s) 
@@ -129,7 +129,9 @@
                                                             [(cons? ks) (local ((define-values (k v) (first ks))
                                                                                 (define-values (newe news) (update-env-store k v this-env this-store 'local)))
                                                                           (add-to-env (rest ks) newe news))])))
-                                              (add-to-env (get-val-lst val-hash) env store))])]))))]
+                                              (if (< (length (hash-keys val-hash)) (length ids))
+                                                  (err store "arity mismatch")
+                                                  (add-to-env (get-val-lst val-hash) env store)))])]))))]
     [else (err store "non closure at application")]))
                                                                              
      
@@ -418,6 +420,7 @@
                               (case op ['* (ValA (VStr (str-mult (VStr-s l) (VNum-n r))) s2)])]
                              [(and (VStr? r) (VNum? l))
                               (case op ['* (ValA (VStr (str-mult (VStr-s r) (VNum-n l))) s2)])]
+ 
                               
                              [else (err s2 "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])))]
     

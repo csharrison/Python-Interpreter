@@ -303,6 +303,11 @@
                                        [some (v) (some (desug v scope))]
                                        [none () (none)]))]
     [PySet (elts) (CSet (make-hash (map (lambda (x) (values (desug x scope) (CNone))) elts)))]
+    [PyGen (elt target iter)
+           (type-case CExp (desug target scope)
+             [CId (x) (CApp (CId 'map) (list (CFunc (list x) (hash empty) (none) (none)
+                                                    (CReturn (desug elt scope))) (desug iter scope)) (hash empty) (none) (none))]
+             [else (error 'desug "didnt get an id in PyGen")])]
     
                                                     
                                                           

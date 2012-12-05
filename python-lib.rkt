@@ -103,8 +103,18 @@ that calls the primitive `print`.
 (define-type LibBinding
   [bind (left : symbol) (right : CExp)])
 
+(define our-map
+  (CFunc (list 'func 'lst) (hash empty) (none) (none)
+         (CIf (Compare '== (CApp (CId 'len) (list (CId 'lst)) (hash empty) (none) (none)) (CNum 0)) 
+              (CReturn (CList #t empty)) 
+              (CReturn (CBinOp '+ 
+                               (CList #t (list (CApp (CId 'func) (list (CIndex (CId 'lst) (CNum 0))) (hash empty) (none) (none)))) 
+                               (CApp (CId 'map) (list (CId 'func) (CSlice (CId 'lst) (CNum 1) (CNone) (CNone))) (hash empty) (none) (none)))))))
+
 (define lib-functions
   (list (bind 'print (make-prim 'print))
+        (bind 'any (make-prim 'any))
+        (bind 'all (make-prim 'all))
         (bind 'tagof (make-prim 'tag))
         (bind 'callable (make-prim 'callable))
         (bind 'min (make-prim 'min))
@@ -119,6 +129,7 @@ that calls the primitive `print`.
         (bind 'int (constructor 'int))
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))
+        (bind 'map our-map)
         (bind 'True true-val); we do this at parse time, which i think is better
         (bind '___assertEqual assert-equal-lambda)
         (bind '___assertIs assert-is)

@@ -21,6 +21,12 @@
         (get-structured-python
           (parse-python/port port python-path))))))
 
+(define (get-core-syntax-for-python port)
+  (print
+   (desugar
+    (get-structured-python
+     (parse-python/port port python-path)))))
+     
 (define python-path "/usr/bin/python3.1")
 
 
@@ -29,6 +35,9 @@
   ("--interp" "Interpret stdin as python"
    (run-python (current-input-port)))
 
+  ("--get-core-syntax" "Get core syntax for a given python input"
+    (get-core-syntax-for-python (current-input-port)))
+    
   ("--interp-py" "Interpret stdin as python using py-prelude.py"
    (define results ((mk-python-cmdline-eval python-path) "stdin" (current-input-port)))
    (display (car results) (current-output-port))
