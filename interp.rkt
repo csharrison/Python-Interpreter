@@ -371,6 +371,20 @@
                                                                                  (CReturn (CBinOp (string->symbol s) (CId '-the-dict) (CIndex (CId '-args) (CNum 0))))
                                                                                  (CError (CStr "update takes no more than one arg!")))
                                                                             (CReturn (CId '-the-dict)))) s2)]
+                                              ['__getitem__ (ValA (VClosure env (list '-the-dict 'the-item) (hash empty) (none) (none)
+                                                                            (CReturn (CIndex (CId '-the-dict) (CId 'the-item)))) s2)]
+                                              ['get (ValA (VClosure env (list '-the-dict) (hash empty) (some '-args) (none)
+                                                                    (CLet '-len- 'local (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none))
+                                                                          (CIf (Compare '> (CId '-len-) (CNum 0))
+                                                                               (CIf (Compare 'in (CIndex (CId '-args) (CNum 0)) (CId '-the-dict))
+                                                                                    (CReturn (CIndex (CId '-the-dict) (CIndex (CId '-args) (CNum 0))))
+                                                                                    (CIf (Compare '== (CId '-len-) (CNum 2))
+                                                                                         (CReturn (CIndex (CId '-args) (CNum 1)))
+                                                                                         (CIf (Compare '== (CId '-len-) (CNum 1))
+                                                                                              (CReturn (CNone))
+                                                                                              (CError (Cmake-exn "TypeError" "get takes no more than 2 args")))))
+                                                                               (CError (Cmake-exn "TypeError" "get takes more than one arg"))))) s2)]
+                                                                                    
                                               [else (err s2 "AttributeError" "dict has not method " s)])]
                                   [else (err s2 "KeyError" "dict lookup")])]
                          [else (err s2 "AttributeError" (pretty o) " is has no attributes, failed at lookup")])))]

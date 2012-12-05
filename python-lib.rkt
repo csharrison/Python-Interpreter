@@ -85,6 +85,12 @@ that calls the primitive `print`.
                        (values (VStr "__exceptiontype__") (VStr type))
                        (values (VStr "__errexp__") (VStr msg))))))
 
+(define (Cmake-exn type msg)
+    (CObject (make-hash (list 
+                       (values (CStr "__type__") (CStr "exception"))
+                       (values (CStr "__class__") (CStr "class"))
+                       (values (CStr "__exceptiontype__") (CStr type))
+                       (values (CStr "__errexp__") (CStr msg))))))
 (define (exn-class (s : string))
   (CObject (make-hash (list (values (CStr "__call__")
                                     (exception-lambda s))
@@ -154,6 +160,7 @@ that calls the primitive `print`.
         (bind 'KeyError (exn-class "KeyError"))
         (bind 'ZeroDivisionError (exn-class "ZeroDivisionError"))
         (bind 'RuntimeError (exn-class "RuntimeError"))
+        (bind 'AttributeError (exn-class "AttributeError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
 
