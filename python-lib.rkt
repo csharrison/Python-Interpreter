@@ -85,6 +85,14 @@ ___fail
                                        (values (CStr "__class__") (CStr "class"))
                                        (values (CStr "__exceptiontype__") (CStr s))
                                        (values (CStr "__errexp__") (CId 'e))))))))
+
+(define (make-exn [type : string] [msg : string]) : CExp
+  (CObject (make-hash (list 
+                       (values (CStr "__type__") (CStr "exception"))
+                       (values (CStr "__class__") (CStr "class"))
+                       (values (CStr "__exceptiontype__") (CStr type))
+                       (values (CStr "__errexp__") (CStr msg))))))
+
 (define (exn-class (s : string))
   (CObject (make-hash (list (values (CStr "__call__")
                                     (exception-lambda s))

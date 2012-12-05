@@ -2,7 +2,8 @@
 
 (require "core-syntax.rkt"
          "methods.rkt"
-         "primitives.rkt")
+         "primitives.rkt"
+         "python-lib.rkt")
 (require (typed-in racket 
                    (string<? : (string string -> boolean))
                    (string<=? : (string string -> boolean))
@@ -23,8 +24,9 @@
 ;;err : calls an error with all input strings appended
 (define-syntax err
   (syntax-rules ()
-    [(err store s) (ExnA (VStr s) store)]
-    [(err store s ...) (ExnA (VStr (foldr string-append "" (list s ...))) store)]))
+    [(err store s) (ExnA (make-exn "Exception" s) store)]
+    [(err store type s) (ExnA (make-exn type s) store)]
+    [(err store s ...) (ExnA (make-exn "Exception" (foldr string-append "" (list s ...))) store)]))
 
 (define-syntax interp-as
   (syntax-rules ()
