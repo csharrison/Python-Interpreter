@@ -150,7 +150,11 @@ that calls the primitive `print`.
                        (values (CStr "__class__") (CStr "class"))
                        (values (CStr "__name__") (CStr "bool"))
                        (values (CStr "__call__") (constructor 'bool))))))
-
+(define int
+  (CObject (make-hash (list 
+                       (values (CStr "__class__") (CStr "class"))
+                       (values (CStr "__name__") (CStr "int"))
+                       (values (CStr "__call__") (constructor 'int))))))
 (define lib-functions
   (list (bind 'print (make-prim 'print))
         (bind 'isinstance isinstance)
@@ -168,7 +172,7 @@ that calls the primitive `print`.
         (bind 'set (constructor 'set))
         (bind 'str (constructor 'str))
         (bind 'bool bool)
-        (bind 'int (constructor 'int))
+        (bind 'int int)
         (bind 'abs (constructor 'abs))
         (bind 'float (constructor 'float))
         (bind 'map our-map)

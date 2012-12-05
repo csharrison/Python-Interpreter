@@ -436,9 +436,9 @@
              (iter (hash-keys defaults) empty store))]
     
     [CBinOp (op left right) 
-            (interp-as env store ([(l s) left] [(r s2) right])
-                       (let ((l (type-case CVal l [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else l]))
-                             (r (type-case CVal r [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else r])))
+            (interp-as env store ([(real-left s) left] [(real-right s2) right])
+                       (let ((l (type-case CVal real-left [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else real-left]))
+                             (r (type-case CVal real-right [VFalse () (VNum 0)] [VTrue () (VNum 1)] [else real-right])))
                        (cond [(and (VNum? l) (VNum? r))
                               (let ((nl (VNum-n l)) (nr (VNum-n r)))
                                 (case op
@@ -465,9 +465,15 @@
                               
                              [else 
                               (if (and (symbol=? op 'isinstance) (VObject? r))
-                                  (type-case CVal l
-                                    [VStr (s) (ValA (VFalse) s2)]
-                                    [VObject (fields) (ValA (VTrue) s2)]
+                                  (type-case CVal r
+                                    [VObject (fields)
+                                             (type-case (optionof CVal) (hash-ref fields (VStr "__name__"))
+                                               [some (name)
+                                                     (type-case CVal name
+                                                       [VStr (namestr) (cond [(and (or (string=? namestr "bool") (string=? namestr "int")) (or (VTrue? real-left) (VFalse? real-left))) (ValA (VTrue) s2)]
+                                                                             [else (ValA (VFalse) s2)])]
+                                                       [else (ValA (VFalse) s2)])]
+                                               [none () (ValA (VFalse) s2)])]
                                     [else (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) )])
                                   (err s2 "TypeError" "invalid operation: " (pretty l) " " (symbol->string op) " " (pretty r) ))])))]
     
