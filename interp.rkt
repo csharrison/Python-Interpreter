@@ -244,7 +244,9 @@
     [CId (x) (begin ;(display (string-append "  env pre lookup of " (symbol->string x))) (display env) (display " ") (display (Ev-locals env)) (display (hash-keys (Ev-locals env))) (display (hash-ref (Ev-locals env) x))  (display "\n\n")
          (type-case (optionof Location) (lookup x env 'local)
            [some (loc) (type-case (optionof CVal) (hash-ref store loc)
-                         [some (gotit) (ValA gotit store)]
+                         [some (gotit) (if (VNotDefined? gotit) (if (some? (hash-ref (Ev-locals env) x)) 
+                                                                    (err store "UnboundLocalError" "not found")
+                                                                    (err store "NameError" "not found")) (ValA gotit store))]
                          [none () (error 'interp (string-append "value in environment not in store: " (symbol->string x)))])]
            [none () (type-case (optionof CVal) (hash-ref globals x)
                       [some (v) (ValA v store)]
@@ -471,6 +473,13 @@
                                                [some (name)
                                                      (type-case CVal name
                                                        [VStr (namestr) (cond [(and (or (string=? namestr "bool") (string=? namestr "int")) (or (VTrue? real-left) (VFalse? real-left))) (ValA (VTrue) s2)]
+                                                                             [(VObject? real-left)
+                                                                              (type-case (optionof CVal) (hash-ref (VObject-fields real-left) (VStr "__class__"))
+                                                                                [some (class) 
+                                                                                      (type-case CVal class
+                                                                                        [VStr (classtr) (ValA (VBool (string=? classtr namestr)) s2)]
+                                                                                        [else (ValA (VFalse) s2)])]
+                                                                                [none () (ValA (VFalse) s2)])]
                                                                              [else (ValA (VFalse) s2)])]
                                                        [else (ValA (VFalse) s2)])]
                                                [none () (ValA (VFalse) s2)])]

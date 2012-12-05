@@ -196,6 +196,7 @@ that calls the primitive `print`.
         (bind 'RuntimeError (exn-class "RuntimeError"))
         (bind 'AttributeError (exn-class "AttributeError"))
         (bind 'UnboundLocalError (exn-class "UnboundLocalError"))
+        (bind 'NameError (exn-class "NameError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
 
