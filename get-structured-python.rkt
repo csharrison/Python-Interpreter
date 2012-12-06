@@ -225,7 +225,7 @@ structure that you define in python-syntax.rkt
     [(hash-table ('nodetype "Raise")
                  ('cause cause)
                  ('exc exc))
-     (PyRaise (get-structure exc))]
+     (PyRaise (if (eq? exc #\nul) (PyNone) (get-structure exc)))]
     
     [(hash-table ('nodetype "BoolOp")
                  ('op op)

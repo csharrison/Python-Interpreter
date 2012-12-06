@@ -92,13 +92,19 @@
                                       [(empty? hndls) accum]
                                       [(cons? hndls) 
                                        (type-case PyExpr (first hndls)
-                                         [PyExceptHandler (body t n)
-                                                          (type-case PyExpr body
+                                         [PyExceptHandler (hbody t n)
+                                                          (type-case PyExpr hbody
                                                             [PySeq (bodyseq)
                                                                    (get-all-bodies (rest hndls) (append accum bodyseq))]
                                                             [else (begin (error 'desugar "PyExceptHandler body not seq") accum)])]
                                          [else (begin (error 'desugar "expected PyExceptHandler, found something else"))])])))
-                            (get-scope (PySeq (get-all-bodies handlers empty)) scope))]
+                            (let ([bodylist (type-case PyExpr body
+                                              [PySeq (b-es) b-es]
+                                              [else (list body)])]
+                                  [elselist (type-case PyExpr elsebody
+                                              [PySeq (e-es) e-es]
+                                              [else (list elsebody)])])
+                            (get-scope (PySeq (get-all-bodies handlers (append bodylist elselist))) scope)))]
                                                         
                                                           
              [else scope])))
@@ -271,7 +277,10 @@
     [PyBinOp (op l r) (CBinOp op (desug l scope) (desug r scope))]
     [PyIf (c t e) (CIf (desug c scope) (desug t scope) (desug e scope))]
     
-    [PyRaise (ex) (CError (desug ex scope))]
+    [PyRaise (ex) (let ([exn (desug ex scope)])
+                    (type-case CExp exn
+                      [CNone () (CError (CId 'the-exn))]
+                      [else (CError exn)]))]
     [PyNotImplemented () (CStr "not implemented")]
     [PyList (elts) (CList true (map (lambda (x) (desug x scope)) elts))]
     [PyTuple (elts) (CList false (map (lambda (x) (desug x scope)) elts))]

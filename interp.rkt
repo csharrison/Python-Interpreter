@@ -235,8 +235,14 @@
                                  [else (err s  "TypeError" "bad operand for unary operation" (symbol->string op))])]))]
     
     [CError (ex) (type-case Ans (interp-full ex env store)
-                   [ValA (v s) (ExnA v s)]
-                   [ExnA (v s) (ExnA v s)])]
+                   [ValA (v s) (type-case CVal v
+                                 [VObject (fields) (ExnA v s)]
+                                 [VStr (msg) (err s "Exception" msg)]
+                                 [else (err s "TypeError" "raised exceptions must be base type objects")])]
+                   [ExnA (v s) (type-case CVal v
+                                 [VObject (fields) (ExnA v s)]
+                                 [VStr (msg) (err s "Exception" msg)]
+                                 [else (err s "TypeError" "raised exceptions must be base type obects")])])]
     [CIf (i then_block else_block)
          (interp-as env store ([(v s) i])
                     (interp-full (if (VTrue? (BoolEval v)) then_block else_block) env s))]
@@ -245,7 +251,7 @@
          (type-case (optionof Location) (lookup x env 'local)
            [some (loc) (type-case (optionof CVal) (hash-ref store loc)
                          [some (gotit) (if (VNotDefined? gotit) (if (some? (hash-ref (Ev-locals env) x)) 
-                                                                    (err store "UnboundLocalError" "not found")
+                                                                    (err store "UnboundLocalError" "not found" (symbol->string x))
                                                                     (err store "NameError" "not found")) (ValA gotit store))]
                          [none () (error 'interp (string-append "value in environment not in store: " (symbol->string x)))])]
            [none () (type-case (optionof CVal) (hash-ref globals x)
@@ -337,12 +343,14 @@
                                                      [some (handler)
                                                            (type-case CExp handler
                                                              [CExceptHandler (body type name)
-                                                                             (type-case (optionof symbol) name
-                                                                               [some (name-act) 
-                                                                                     (local ((define-values (ne ns) 
-                                                                                               (update-env-store name-act exnobj env s 'local)))
-                                                                                       (interp-full handler ne ns))]
-                                                                               [none () (interp-full handler env s)])]
+                                                                             (local ((define-values (ne ns)
+                                                                                       (update-env-store 'the-exn exnobj env s 'local)))
+                                                                               (type-case (optionof symbol) name
+                                                                                 [some (name-act) 
+                                                                                       (local ((define-values (n-ne n-ns) 
+                                                                                                 (update-env-store name-act exnobj ne ns 'local)))
+                                                                                         (interp-full handler n-ne n-ns))]
+                                                                                 [none () (interp-full handler ne ns)]))]
                                                              [else (error 'interp "findhandler returned non CExceptHandler, whaa?")])]
                                                      [none () (interp-full elsebody env s)])))
                                                  (error 'interp "caught non exception object"))]
@@ -532,5 +540,4 @@
                                                   [none () (error 'interp  "exception must have value __errexp__")])]
                                       [none () (error 'interp "exception must have value __exceptiontype__")])]
                     [VStr (s) (begin (error 'interp-internal s) v)]
-                    [else (error 'interp "exceptions must extend the base type exception")])])))
-
+                    [else (error 'interp (string-append "exceptions must extend the base type exception: " (pretty v)))])])))
