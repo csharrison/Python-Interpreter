@@ -5,20 +5,6 @@ class A:
     def cm(cls):
         return (cls, 'A')
 
-class B(A):
-    def f(self):
-        return super().f() + 'B'
-    @classmethod
-    def cm(cls):
-        return (cls, super().cm(), 'B')
-
-class C(A):
-    def f(self):
-        return super().f() + 'C'
-    @classmethod
-    def cm(cls):
-        return (cls, super().cm(), 'C')
-
 class G(A):
     pass
 

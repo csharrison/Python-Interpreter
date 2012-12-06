@@ -25,6 +25,21 @@ primitives here.
                    [string-split : (string string -> (listof string))]
                    [range : (number number number -> (listof number))]))
 
+(define (nth lst n)
+  (cond [(zero? n) (first lst)]
+        [else (nth (rest lst) (- n 1))]))
+(define (slice-lst lst o-start o-end step)
+  (local ((define len (length lst))
+          (define start (if (and (= o-start 0) (< step 0)) (- len 1) o-start))
+          (define end (if (and (= o-end len) (< step 0)) 0 o-end))
+          (define (traverse curr acc)
+            (cond [(or (and (< step 0) (< curr end)) (and (> step 0) (> curr end))) acc]
+                  [else (traverse (+ curr step)
+                                  (if (or (< curr 0) (>= curr len))
+                                      acc
+                                      (cons (nth lst curr) acc)))])))
+    (reverse (traverse start empty))))
+
 ;;err : calls an error with all input strings appended
 (define-syntax err
   (syntax-rules ()
@@ -92,9 +107,8 @@ primitives here.
               [VList (m elts)
                      (let ((l (if (VNone? lower) 0 (VNum-n lower)))
                            (u (if (VNone? upper) (length elts) (VNum-n upper)))
-                           (s (if (VNone? step) 1 (if (< (VNum-n step) 0) (- 0 (VNum-n step)) (VNum-n step))))
-                           (elts (if (and (VNum? step) (< (VNum-n step) 0)) (reverse elts) elts)))
-                       (ValA (VList m (drop-n (between elts l u) s)) sto))]
+                           (s (if (VNone? step) 1 (VNum-n step))))
+                       (ValA (VList m (slice-lst elts l u s)) sto))]
               [VStr (str) (type-case Ans (slice (VList false (map VStr (str-to-list str))) lower upper step sto)
                             [ValA (v s) (type-case CVal v
                                          [VList (m l) (ValA (VStr (string-join (map VStr-s l) "")) sto)]
