@@ -160,10 +160,21 @@ that calls the primitive `print`.
                        (values (CStr "__class__") (CStr "class"))
                        (values (CStr "__name__") (CStr "int"))
                        (values (CStr "__call__") (constructor 'int))))))
+(define real-range
+  (CFunc empty (hash empty) (some '-args) (none)
+         (CLet '-length- 'local (CApp (CId 'prim-len) (list (CId '-args)) (hash empty) (none) (none))
+               (CIf (Compare '== (CId '-length-) (CNum 1))
+                    (CReturn (CRange (CNum 0) (CIndex (CId '-args) (CNum 0)) (CNum 1)))
+                    (CIf (Compare '== (CId '-length-) (CNum 2))
+                         (CReturn (CRange (CIndex (CId '-args) (CNum 0)) (CIndex (CId '-args) (CNum 1)) (CNum 1)))
+                         (CIf (Compare '== (CId '-length-) (CNum 3))
+                              (CReturn (CRange (CIndex (CId '-args) (CNum 0)) (CIndex (CId '-args) (CNum 1)) (CIndex (CId '-args) (CNum 2))))
+                              (CError (Cmake-exn "TypeError" "arity mismatch"))))))))
 (define lib-functions
   (list (bind 'print (make-prim 'print))
         (bind 'isinstance isinstance)
-        (bind 'range (make-prim 'range))
+        (bind 'rrange (make-prim 'range))
+        (bind 'range real-range)
         (bind 'any (make-prim 'any))
         (bind 'all (make-prim 'all))
         (bind 'tagof (make-prim 'tag))
@@ -202,6 +213,7 @@ that calls the primitive `print`.
         (bind 'AttributeError (exn-class "AttributeError"))
         (bind 'UnboundLocalError (exn-class "UnboundLocalError"))
         (bind 'NameError (exn-class "NameError"))
+        (bind 'ValueError (exn-class "ValueError"))
         (bind 'IndexError (exn-class "IndexError"))))
 
 

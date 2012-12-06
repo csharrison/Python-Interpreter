@@ -48,7 +48,7 @@ containers: dict, (set)
   [CApp (fun : CExp) (args : (listof CExp)) (keys : (hashof symbol CExp)) (star : (optionof CExp)) (kwarg : (optionof CExp))]
   [CPartialApply (fun : CExp) (arg : CExp)]
   [CFunc (args : (listof symbol)) (defaults : (hashof symbol CExp)) (star : (optionof symbol)) (kwarg : (optionof symbol)) (body : CExp)]
-  
+  [CRange (start : CExp) (stop : CExp) (step : CExp)]
   [CPrim1 (prim : symbol) (arg : CExp)]
   [CBinOp (op : symbol) (left : CExp) (right : CExp)];+ - * / // ** << >> bitor bitxor & %
   [Compare (op : symbol) (l : CExp) (r : CExp)]
@@ -80,6 +80,7 @@ containers: dict, (set)
   [VDict (fields : (hashof CVal CVal))]
   [VSet (elts : (hashof CVal CVal))];CVal VNone
   [VFilter (expr : CExp) (env : Env)]
+  [VRange (start : CVal)  (end : CVal)  (step : CVal)]
   [VNotDefined])
 
 
