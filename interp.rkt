@@ -10,6 +10,8 @@
                    (take : ((listof 'a)  number -> (listof 'a)))
                    [drop : ((listof 'a)  number -> (listof 'a))]
                    (string>? : (string string -> boolean))
+                   (inexact? : (number -> boolean))
+                   (exact? : (number -> boolean))
                    (string>=? : (string string -> boolean))
                    (expt : (number number -> number))))
 (define s+ string-append)
@@ -300,7 +302,18 @@
                             (iter elts empty store))]
     [CRange (start end step)
             (interp-as env store ([(sta s) start] [(en s2) end] [(st s3) step])
-                       (ValA (VRange sta en st) s3))]
+                       (type-case CVal sta
+                         [VNum (s) (type-case CVal en
+                                     [VNum (stop) (type-case CVal st
+                                                    [VNum (step) 
+                                                          (if (foldl (lambda (x r) (and (exact? x) r)) true (list s stop step))
+                                                              (if (not (= step 0))    
+                                                                  (ValA (VRange sta en st) s3)
+                                                                  (err store "ValueError" "step size 0"))
+                                                              (err store "TypeError" "range takes exact params"))]
+                                                    [else (err store "TypeError" "cannot call range with non int arguments")])]
+                                     [else (err store "TypeError" "cannot call range with non int arguments")])]
+                         [else (err store "TypeError" "cannot call range with non int arguments")]))]
     [CSlice (l low up st)
             (interp-as env store ([(lst s) l] [(lower s2) low] [(upper s3) up] [(step s4) st])
                        (slice lst lower upper step s4))]

@@ -40,6 +40,12 @@ primitives here.
                                       (cons (nth lst curr) acc)))])))
     (reverse (traverse start empty))))
 
+(define (range-lst start end step)
+  (local ((define (traverse curr acc)
+            (cond [(or (= curr end) (and (< step 0) (< curr end)) (and (> step 0) (> curr end))) acc]
+                  [else (traverse (+ curr step) (cons curr acc))])))
+    (reverse (traverse start empty))))
+
 ;;err : calls an error with all input strings appended
 (define-syntax err
   (syntax-rules ()
@@ -208,6 +214,14 @@ primitives here.
     [VStr (s) (ValA (VList mutable (map VStr (str-to-list s))) store)]
     [VDict (fields) (ValA (VList mutable (hash-keys fields)) store)]
     [VSet (elts) (ValA (VList mutable (hash-keys elts)) store)]
+    [VRange (s stop step)
+            (type-case CVal s
+              [VNum (s) (type-case CVal stop
+                          [VNum (stop) (type-case CVal step
+                                         [VNum (step) (ValA (VList true (map VNum (range-lst s stop step))) store)]
+                                         [else (err store "TypeError" "cannot call range with non int arguments")])]
+                          [else (err store "TypeError" "cannot call range with non int arguments")])]
+              [else (err store "TypeError" "cannot call range with non int arguments")])]
     [else (err store "TypeError" "cannot call list() on non iterable")]))
 
 (define (to-set arg store)
