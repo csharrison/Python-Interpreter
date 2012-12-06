@@ -277,10 +277,7 @@
     [PyBinOp (op l r) (CBinOp op (desug l scope) (desug r scope))]
     [PyIf (c t e) (CIf (desug c scope) (desug t scope) (desug e scope))]
     
-    [PyRaise (ex) (let ([exn (desug ex scope)])
-                    (type-case CExp exn
-                      [CNone () (CError (CId 'the-exn))]
-                      [else (CError exn)]))]
+    [PyRaise (ex) (CError (desug ex scope))]
     [PyNotImplemented () (CStr "not implemented")]
     [PyList (elts) (CList true (map (lambda (x) (desug x scope)) elts))]
     [PyTuple (elts) (CList false (map (lambda (x) (desug x scope)) elts))]

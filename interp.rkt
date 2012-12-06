@@ -238,9 +238,19 @@
                    [ValA (v s) (type-case CVal v
                                  [VObject (fields) (ExnA v s)]
                                  [VStr (msg) (err s "Exception" msg)]
+                                 [VNone () (type-case Ans (interp-full (CId 'the-exn) env store)
+                                             [ValA (exn-v exn-s) (ExnA exn-v exn-s)]
+                                             [ExnA (exn-v exn-s) (ExnA exn-v exn-s)])]
                                  [else (err s "TypeError" "raised exceptions must be base type objects")])]
                    [ExnA (v s) (type-case CVal v
-                                 [VObject (fields) (ExnA v s)]
+                                 [VObject (fields)
+                                          ; CHANGE BELOW TO CHECK FOR NAME ERROR ON 'the-exn VERSUS OTHER STUF
+                                          (type-case (optionof CVal) (hash-ref fields (VStr "__errexp__"))
+                                            [some (errexp) (ExnA v s)]
+                                            [none () (ExnA v s)])]
+                                 [VNone () (type-case Ans (interp-full (CId 'the-exn) env store)
+                                             [ValA (exn-v exn-s) (ExnA exn-v exn-s)]
+                                             [ExnA (exn-v exn-s) (ExnA exn-v exn-s)])]
                                  [VStr (msg) (err s "Exception" msg)]
                                  [else (err s "TypeError" "raised exceptions must be base type obects")])])]
     [CIf (i then_block else_block)
@@ -345,12 +355,17 @@
                                                              [CExceptHandler (body type name)
                                                                              (local ((define-values (ne ns)
                                                                                        (update-env-store 'the-exn exnobj env s 'local)))
-                                                                               (type-case (optionof symbol) name
-                                                                                 [some (name-act) 
-                                                                                       (local ((define-values (n-ne n-ns) 
-                                                                                                 (update-env-store name-act exnobj ne ns 'local)))
-                                                                                         (interp-full handler n-ne n-ns))]
-                                                                                 [none () (interp-full handler ne ns)]))]
+                                                                               (let ([handled (type-case (optionof symbol) name
+                                                                                                [some (name-act) 
+                                                                                                      (local ((define-values (n-ne n-ns) 
+                                                                                                                (update-env-store name-act exnobj ne ns 'local)))
+                                                                                                        (interp-full handler n-ne n-ns))]
+                                                                                                [none () (interp-full handler ne ns)])])
+                                                                                 (type-case Ans handled
+                                                                                   [ValA (v s) handled]
+                                                                                   [ExnA (v s) (if (and (exn-is v "NameError") (exn-says v "the-exn"))
+                                                                                                   (ExnA exnobj ns)
+                                                                                                   handled)])))]
                                                              [else (error 'interp "findhandler returned non CExceptHandler, whaa?")])]
                                                      [none () (interp-full elsebody env s)])))
                                                  (error 'interp "caught non exception object"))]
@@ -541,3 +556,19 @@
                                       [none () (error 'interp "exception must have value __exceptiontype__")])]
                     [VStr (s) (begin (error 'interp-internal s) v)]
                     [else (error 'interp (string-append "exceptions must extend the base type exception: " (pretty v)))])])))
+
+(define (exn-is (exn : CVal) (type : string)) : boolean
+  (type-case CVal exn
+    [VObject (fields) 
+            (type-case (optionof CVal) (hash-ref fields (VStr "__exceptiontype__"))
+              [some (t) (equal? (VStr-s t) type)]
+              [none () false])]
+    [else false]))
+
+(define (exn-says (exn : CVal) (s : string)) : boolean
+  (type-case CVal exn
+    [VObject (fields) 
+            (type-case (optionof CVal) (hash-ref fields (VStr "__errexp__"))
+              [some (t) (str-in (VStr-s t) s)]
+              [none () false])]
+    [else false]))
