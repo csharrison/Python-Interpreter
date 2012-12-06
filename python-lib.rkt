@@ -71,12 +71,17 @@ that calls the primitive `print`.
          (CIf (Compare 'in (CId 'first-elt) (CId 'second-elt)) (CTrue)
               (CError (CStr "Assert in failed")))))
 (define (exception-lambda [s : string]) : CExp
-  (CFunc (list 'self 'e) (hash empty) (none) (none)
+  (CFunc (list 'self) (hash empty) (some 'args) (none)
          (CReturn (CObject (make-hash (list 
                                        (values (CStr "__type__") (CStr "exception"))
                                        (values (CStr "__class__") (CStr "class"))
                                        (values (CStr "__exceptiontype__") (CStr s))
-                                       (values (CStr "__errexp__") (CId 'e))))))))
+                                       (values (CStr "__errexp__") 
+                                               (CIf (Compare '> 
+                                                             (CApp (CId 'len) (list (CId 'args)) (hash empty) (none) (none))
+                                                             (CNum 0))
+                                                    (CIndex (CId 'args) (CNum 0))
+                                                    (CStr "default")))))))))
 
 (define (make-exn [type : string] [msg : string]) : CVal
   (VObject (make-hash (list 
@@ -97,7 +102,7 @@ that calls the primitive `print`.
                             (values (CStr "__exceptionclass__") (CStr s))))))
 
 (define fail-lambda
-  (CFunc empty (hash empty) (none) (none)
+  (CFunc empty (hash empty) (some 'whatever) (none)
          (CError (CStr "Assert (__fail) failed"))))
 
 
