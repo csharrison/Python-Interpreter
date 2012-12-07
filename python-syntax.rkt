@@ -41,8 +41,9 @@
   [PyGetAttr (target : PyExpr) (attr : PyExpr)]
   [PyDelete (target : PyExpr)]
   [PyFunDef (name : symbol) (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
+  [PyClassMethod (name : symbol) (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
   [PyFun (args : (listof symbol)) (defaults : (hashof symbol PyExpr)) (starargs : (optionof symbol)) (kwargs : (optionof symbol)) (body : PyExpr)]
-  
+
   [PyReturn (val : PyExpr)]
   [PyApp (fun : PyExpr) (args : (listof PyExpr)) (keys : (hashof symbol PyExpr)) (star : (optionof PyExpr)) (kwarg : (optionof PyExpr))]
   

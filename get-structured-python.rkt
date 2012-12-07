@@ -109,9 +109,13 @@ structure that you define in python-syntax.rkt
                  ('decorator_list dec_lst)
                  ('returns returns))
      (local ((define-values (regs defs star kwar) (get-structure args)))
-       (PyFunDef (string->symbol name) 
-                 regs defs star kwar
-                 (PySeq (map get-structure body))))]
+       (if (or (empty? dec_lst) (equal? (get-structure (first dec_lst)) (PyId 'classmethod)))
+           (PyFunDef (string->symbol name) 
+                     regs defs star kwar
+                     (PySeq (map get-structure body)))
+           (PyClassMethod (string->symbol name) 
+                          regs defs star kwar
+                          (PySeq (map get-structure body)))))]
     [(hash-table ('nodetype "Return")
                  ('value value))
      (PyReturn (get-structure value))]

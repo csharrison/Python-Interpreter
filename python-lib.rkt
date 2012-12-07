@@ -76,7 +76,13 @@ that calls the primitive `print`.
                                        (values (CStr "__type__") (CStr "exception"))
                                        (values (CStr "__class__") (CStr "class"))
                                        (values (CStr "__exceptiontype__") (CStr s))
-                                       (values (CStr "__errexp__") 
+                                       (values (CStr "__str__")
+                                               (CIf (Compare '> 
+                                                             (CApp (CId 'len) (list (CId 'args)) (hash empty) (none) (none))
+                                                             (CNum 0))
+                                                    (CIndex (CId 'args) (CNum 0))
+                                                    (CStr "default")))
+                                       (values (CStr "__errexp__")
                                                (CIf (Compare '> 
                                                              (CApp (CId 'len) (list (CId 'args)) (hash empty) (none) (none))
                                                              (CNum 0))
@@ -88,6 +94,7 @@ that calls the primitive `print`.
                        (values (VStr "__type__") (VStr "exception"))
                        (values (VStr "__class__") (VStr "class"))
                        (values (VStr "__exceptiontype__") (VStr type))
+                       (values (VStr "__str__") (VStr msg))
                        (values (VStr "__errexp__") (VStr msg))))))
 
 (define (Cmake-exn type msg)
@@ -95,6 +102,7 @@ that calls the primitive `print`.
                        (values (CStr "__type__") (CStr "exception"))
                        (values (CStr "__class__") (CStr "class"))
                        (values (CStr "__exceptiontype__") (CStr type))
+                       (values (CStr "__str__") (CStr msg))
                        (values (CStr "__errexp__") (CStr msg))))))
 (define (exn-class (s : string))
   (CObject (make-hash (list (values (CStr "__call__")

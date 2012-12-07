@@ -160,8 +160,11 @@ primitives here.
     [VNotDefined () "Not Defined"]
     [VClosure (env args defs s k body) "(closure ...)"]
     [VFilter (f e) "filter"]
-    [VObject (fields) (string-join  (list "Object : {" (string-join (map (lambda (k)
-                                                                (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
+    [VObject (fields) 
+             (type-case (optionof CVal) (hash-ref fields (VStr "__str__"))
+               [some (f) (pretty f)]
+               [none () (string-join  (list "Object : {" (string-join (map (lambda (k)
+                                                                (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")])]
     [VDict (fields) (string-join  (list "{" (string-join (map (lambda (k)
                                                                 (string-join (list (pretty k) (pretty (some-v (hash-ref fields k)))) ": ")) (hash-keys fields)) ", ") "}") "")]
     [VSet (elts) (string-join (list "{" (string-join (map pretty (hash-keys elts)) ", ") "}") "")]

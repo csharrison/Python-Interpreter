@@ -205,6 +205,7 @@
                           (if (empty? fs) empty
                               (type-case PyExpr (first fs)
                                 [PyFunDef (name args defaults s k body) (cons (values (str name) (desug (PyFun args defaults s k body) scope)) (get-fields (rest fs)))]
+                                [PyClassMethod (name args defaults s k body) (cons (values (str name) (desug (PyFun args defaults s k body) scope)) (get-fields (rest fs)))]
                                 [PyAssign (targets value) 
                                           (cond [(empty? (rest targets))
                                                  (type-case PyExpr (first targets)
@@ -251,6 +252,10 @@
                                                    (CPartialApply (CId result) (CId t))
                                                    (CId result))))))))]
     [PyFun (args defaults star kwarg body) (CFunc args 
+                                                  (convert-defaults defaults scope) 
+                                                  star kwarg
+                                                  (desug body scope))]
+    [PyClassMethod (name args defaults star kwarg body) (CFunc args 
                                                   (convert-defaults defaults scope) 
                                                   star kwarg
                                                   (desug body scope))]
